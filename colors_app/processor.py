@@ -34,6 +34,12 @@ class ColorState():
     def process(self, message: MRCMessageWrap):
         """ Должен вернуть, что нужно сказать марусе и как изменить стейт  """
 
+        # todo 1. Учесть несколько вариантов правильных ответов (жолтый, жёлтый и желтый)
+        # todo 2. Ударения в цветах и текстах
+        # todo 3. Играть ещё раз
+        # todo 4. Выходить из игры
+        # todo 5. Вынести базу в core
+
         #  Если не задали ещё вопросов - задаём
         if not self.questions:
             question, text = self.next_question()
@@ -48,15 +54,14 @@ class ColorState():
             # если угадали
             if answer.lower() in str(message.request.command).lower() :
                 # угадали
-                # todo озвучить
-                good_text = 'Верно! Получится {}. '.format(answer)
+                good_text = 'Верно! <speaker audio=\"marusia-sounds/game-win-1\"> Получится {}. '.format(answer)
                 self.scores += 1
                 if self.can_next:
                     question, text = self.next_question()
-                    new_text = '{} Следующий вопрос: {}'.format(good_text, text)
+                    new_text = '{} Следующий ^вопрос^ - {}'.format(good_text, text)
                     return new_text
                 else:
-                    new_text = '{} Игра завершена! Вы набрали {} баллов.'.format(good_text, self.scores)
+                    new_text = '{} Игра завершена! ^Вы^ набрали ^{}^ баллов.'.format(good_text, self.scores)
                     self.end_session = True
                     return new_text
 
@@ -66,7 +71,7 @@ class ColorState():
                 if self.try_count < 3:
 
                     question_text = self.get_text_question(current_question)
-                    text = 'Не верно, попробуйте ещё раз. {}'.format(question_text)
+                    text = 'Не верно! <speaker audio=\"marusia-sounds/game-loss-2\"> попр`обуйте ещё раз! {}'.format(question_text)
                     self.try_count += 1
                     return text
 
@@ -74,13 +79,13 @@ class ColorState():
                     # Если попытки кончились
                     if self.can_next:
                         question, text = self.next_question()
-                        new_text = 'Правильный ответ: {}! Переходим к следующему вопросу! {}'.format(
+                        new_text = '<speaker audio=\"marusia-sounds/game-loss-2\"> Правильный ответ - ^{}^! Переходим к следующему вопросу! {}'.format(
                             self.get_full_answer(current_question, ),
                             text
                         )
                         return new_text
                     else:
-                        new_text = 'Игра завершена! Вы набрали {} баллов.'.format(self.scores)
+                        new_text = 'Игра завершена! ^Вы^ набрали ^{}^ баллов.'.format(self.scores)
                         self.end_session = True
                         return new_text
 
@@ -113,7 +118,7 @@ class ColorState():
 
     def get_text_question(self, question):
 
-        text = "Какой цвет получится, если смешать {} и {}?".format(
+        text = "Какой цвет получится - если смешать ^{}^ - и ^{}^?".format(
             self.get_ru(question['mix'][0]),
             self.get_ru(question['mix'][1])
         )
@@ -124,7 +129,7 @@ class ColorProcessor(object):
     """ Процесс обработки сообщения от Маруси и формирование ответа """
 
     def do_exit(self):
-        return MRCResponseDict(text='До свидания! Приходите ещё, помешать красочки', end_session=True)
+        return MRCResponseDict(text='До сви`дания! Приходите ещё, помешать кр`асочки', end_session=True)
 
     def process(self, message:MRCMessageWrap) -> MRCResponse:
 
@@ -135,7 +140,7 @@ class ColorProcessor(object):
         if message.request.command == MRC_EXIT_COMMAND:
             _response_dict = self.do_exit()
             return MRCResponse(
-                response=_response_dict.serialize(),
+                response=_response_dict,
                 session=message.session,
                 version=message.version
             )
@@ -149,7 +154,7 @@ class ColorProcessor(object):
             #  Если только начали сессию пох
             # if message.session.new:
 
-            welcome = 'Здравствуй! Давай поиграем в красочки? '\
+            welcome = 'Давай поиграем в ^красочки^? '\
                       'Я буду называть цвета. '\
                       'А ваша задача отгадать, какой цвет получится, если их смешать...'
             new_text = welcome + text
