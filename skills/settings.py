@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--_(k0hv5^*4c+tta=i&^kn&c(^re2b76iq-ldq7-1drtsv4g!s'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['https://skill-debugger.marusia.mail.ru', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['https://skill-debugger.marusia.mail.ru', '127.0.0.1', 'localhost', 'skills.na4u.ru']
 
 
 # Application definition
@@ -127,6 +127,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 try:
-    from settings_local import *
+    from skills.settings_local import *
 except ImportError as e:
     print("Settings local error", e)
+else:
+    INSTALLED_APPS += INSTALLED_APPS_LOCAL
