@@ -84,7 +84,13 @@ class ColorState():
                         )
                         return new_text
                     else:
-                        new_text = 'Игра завершена! ^Вы^ набрали ^{}^ баллов.'.format(self.scores)
+                        if self.scores == self.MAX:
+                            result_text = 'Поздравляю! У вас ^отличный^ результат!'
+                        elif self.scores == self.MAX - 1:
+                            result_text = 'Поздравляю! У вас ^хороший^ результат!'
+                        else:
+                            result_text = ''
+                        new_text = 'Игра завершена!{} ^Вы^ набрали ^{}^ баллов.'.format(result_text, self.scores)
                         self.end_session = True
                         return new_text
 
@@ -112,9 +118,11 @@ class ColorState():
         return text
 
     def get_text_question(self, question: ColorMixObj):
+        index = random.choice((0, 1))
+        index2 = 1 if index == 0 else 0
         text = "Какой цвет получится - если смешать ^{}^ - и ^{}^?".format(
-            question.mix[0].ru,
-            question.mix[1].ru
+            question.mix[index].ru,
+            question.mix[index2].ru
         )
         return text
 
@@ -126,9 +134,6 @@ class ColorProcessor(object):
         return MRCResponseDict(text='До сви`дания! Приходите ещё, помешать кр`асочки', end_session=True)
 
     def process(self, message:MRCMessageWrap) -> MRCResponse:
-
-        print(message.request.command)
-        print(message.request.original_utterance)
 
         # Если сигнал - что пользователь вышел из скилла
         if message.request.command == MRC_EXIT_COMMAND:
