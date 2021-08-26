@@ -2,8 +2,8 @@ from __future__ import unicode_literals, absolute_import, division, print_functi
 
 import random
 
-from colors_app.const import COLOR_MIX, COLOR_RU
-from colors_app.wrap import MRCMessageWrap, MRCResponse, MRCResponseDict
+from colors_app.const import COLOR_MIX, ColorObj, ColorMixObj
+from core.wrappers.mrc import MRCMessageWrap, MRCResponse, MRCResponseDict
 
 MRC_EXIT_COMMAND = "on_interrupt"
 
@@ -34,11 +34,10 @@ class ColorState():
     def process(self, message: MRCMessageWrap):
         """ Должен вернуть, что нужно сказать марусе и как изменить стейт  """
 
-        # todo 1. Учесть несколько вариантов правильных ответов (жолтый, жёлтый и желтый)
         # todo 2. Ударения в цветах и текстах
         # todo 3. Играть ещё раз
         # todo 4. Выходить из игры
-        # todo 5. Вынести базу в core
+        # todo 6. аудио не выводить в текст
 
         #  Если не задали ещё вопросов - задаём
         if not self.questions:
@@ -49,10 +48,10 @@ class ColorState():
         if self.questions:
             index = self.questions[-1]
             current_question = COLOR_MIX[index]
-            answer = self.get_ru(current_question['answer'])
+            answer = current_question.answer.ru
 
             # если угадали
-            if answer.lower() in str(message.request.command).lower() :
+            if current_question.user_answer_is_valid(str(message.request.command)):
                 # угадали
                 good_text = 'Верно! <speaker audio=\"marusia-sounds/game-win-1\"> Получится {}. '.format(answer)
                 self.scores += 1
@@ -104,23 +103,18 @@ class ColorState():
         text = self.get_text_question(question)
         return question, text
 
-    @staticmethod
-    def get_ru(color):
-        return COLOR_RU[color]
-
     def get_full_answer(self, question):
         text = "Если смешать {} и {}, то получится {}".format(
-            self.get_ru(question['mix'][0]),
-            self.get_ru(question['mix'][1]),
-            self.get_ru(question['answer']),
+            question.mix[0].ru,
+            question.mix[1].ru,
+            question.ru,
         )
         return text
 
-    def get_text_question(self, question):
-
+    def get_text_question(self, question: ColorMixObj):
         text = "Какой цвет получится - если смешать ^{}^ - и ^{}^?".format(
-            self.get_ru(question['mix'][0]),
-            self.get_ru(question['mix'][1])
+            question.mix[0].ru,
+            question.mix[1].ru
         )
         return text
 

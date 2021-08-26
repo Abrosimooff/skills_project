@@ -16,9 +16,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from colors_app.views import WebHookColorsView
+from colors_app.views import MRCSkillColorsView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('skills/marusia/colors/', WebHookColorsView.as_view(), name='skills'),
+    path('skills/marusia/colors/', MRCSkillColorsView.as_view(), name='mrc-skills-colors'),
 ]
