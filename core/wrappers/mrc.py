@@ -62,6 +62,14 @@ class MRCMessageWrap(object):
         self.state = StateWrap(message.get('state', {}))
 
 
+class ActionResponse(object):
+    """  Ответ MRCHandler в методе action """
+
+    def __init__(self, text, tts=None) -> None:
+        self.text = text
+        self.tts = tts
+
+
 class MRCResponseDict(object):
 
     def __init__(self, text, end_session, tts=None, buttons=None, card=None) -> None:
@@ -70,10 +78,14 @@ class MRCResponseDict(object):
         self.tts = tts
 
     def serialize(self):
-        return dict(
+        response = dict(
             text=self.text,
             end_session=self.end_session,
         )
+        if self.tts:
+            response['tts'] = self.tts
+
+        return response
 
 
 class MRCResponse(object):
