@@ -28,7 +28,6 @@ class Color(object):
     GRAY = ColorObj('gray', 'Серый', ['серы', 'серо', 'сера'])
     LIGHT_BLUE = ColorObj('light_blue', 'Голубой', ['голуб'])
     BROWN = ColorObj('brown', 'Коричневый', ['коричнев'])
-    GOLD = ColorObj('gold', 'Золотой', ['золот'])
     BIRUZA = ColorObj('biruza', 'Бирюзовый', ['бирюз', 'берез'])
 
 
@@ -56,7 +55,7 @@ COLOR_MIX = [
     ColorMixObj(anwser=Color.GREEN, mix=(Color.YELLOW, Color.BLUE)),
     ColorMixObj(anwser=Color.LIGHT_BLUE, mix=(Color.BLUE, Color.WHITE)),
     ColorMixObj(anwser=Color.BROWN, mix=(Color.GREEN, Color.RED)),
-    ColorMixObj(anwser=Color.GOLD, mix=(Color.BLACK, Color.YELLOW)),
+    ColorMixObj(anwser=Color.BROWN, mix=(Color.BLACK, Color.YELLOW)),
     ColorMixObj(anwser=Color.BIRUZA, mix=(Color.GREEN, Color.BLUE)),
     ColorMixObj(anwser=Color.BLUE, mix=(Color.LIGHT_BLUE, Color.PURPLE)),
 ]
