@@ -241,8 +241,8 @@ class RepeatHandler(MRCHandler):
             self.state = ColorState([], 0, 0, ColorMixHandler.name)
             handler = ColorMixHandler(message=self.message, state=self.state)
             kw = {'from_repeat': True}
-            text = handler.action(**kw)
-            return ActionResponse(text)
+            action_response = handler.action(**kw)  # type: ActionResponse
+            return action_response
         else:
             # попрощаться
             self.state.end_session = True
