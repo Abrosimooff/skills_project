@@ -1,5 +1,6 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
+import random
 from typing import Tuple, AnyStr
 
 
@@ -16,19 +17,19 @@ class ColorObj(object):
 
 
 class Color(object):
-    WHITE = ColorObj('white', 'Белый', ['белы', 'бела', 'бело'])
-    RED = ColorObj('red', 'Красный', ['красн'])
-    YELLOW = ColorObj('yellow', 'Жёлтый', ['желт', 'жёлт'])
-    BLUE = ColorObj('blue', 'Синий', ['сини', 'синя', 'сине'])
-    GREEN = ColorObj('green', 'Зелёный', ['зелен', 'зелён'])
-    BLACK = ColorObj('black', 'Чёрный', ['чёрн', 'черн'])
-    ORANGE = ColorObj('orange', 'Оранжевый', ['оранжев'])
-    PURPLE = ColorObj('purple', 'Фиолетовый', ['фиолетов'])
-    PINK = ColorObj('pink', 'Розовый', ['розов', 'роза'])
-    GRAY = ColorObj('gray', 'Серый', ['серы', 'серо', 'сера'])
-    LIGHT_BLUE = ColorObj('light_blue', 'Голубой', ['голуб'])
-    BROWN = ColorObj('brown', 'Коричневый', ['коричнев'])
-    BIRUZA = ColorObj('biruza', 'Бирюзовый', ['бирюз', 'берез'])
+    WHITE = ColorObj('white', 'белый', ['белы', 'бела', 'бело'])
+    RED = ColorObj('red', 'красный', ['красн'])
+    YELLOW = ColorObj('yellow', 'жёлтый', ['желт', 'жёлт'])
+    BLUE = ColorObj('blue', 'синий', ['сини', 'синя', 'сине'])
+    GREEN = ColorObj('green', 'зелёный', ['зелен', 'зелён'])
+    BLACK = ColorObj('black', 'чёрный', ['чёрн', 'черн'])
+    ORANGE = ColorObj('orange', 'оранжевый', ['оранжев'])
+    PURPLE = ColorObj('purple', 'фиолетовый', ['фиолетов'])
+    PINK = ColorObj('pink', 'розовый', ['розов', 'роза'])
+    GRAY = ColorObj('gray', 'серый', ['серы', 'серо', 'сера'])
+    LIGHT_BLUE = ColorObj('light_blue', 'голубой', ['голуб'])
+    BROWN = ColorObj('brown', 'коричневый', ['коричнев'])
+    BIRUZA = ColorObj('biruza', 'бирюзовый', ['бирюз', 'берез'])
 
 
 class ColorMixObj(object):
@@ -45,6 +46,25 @@ class ColorMixObj(object):
             if variant.lower() in user_answer.lower():
                 return True
         return False
+
+    def get_full_answer(self) -> AnyStr:
+        """ Полный ответ на вопрос """
+        text = "если смешать {} и {}, то получится {}".format(
+            self.mix[0].ru,
+            self.mix[1].ru,
+            self.answer.ru
+        )
+        return text
+
+    def get_text_question(self) -> AnyStr:
+        """ Текст вопроса """
+        index = random.choice((0, 1))
+        index2 = 1 if index == 0 else 0
+        text = "Какой цвет получится, если смешать ^{}^ и {}?".format(
+            self.mix[index].ru,
+            self.mix[index2].ru
+        )
+        return text
 
 
 COLOR_MIX = [

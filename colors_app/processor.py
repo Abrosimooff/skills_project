@@ -11,10 +11,10 @@ MRC_EXIT_COMMAND = "on_interrupt"
 
 
 SCORES_STR = {
-    0: 'Баллов',
-    1: 'Балл',
-    2: 'Балла',
-    3: 'Балла',
+    0: 'баллов',
+    1: 'балл',
+    2: 'балла',
+    3: 'балла',
 }
 
 
@@ -63,27 +63,8 @@ class ColorState:
 
         self.questions.append(index)
         self.try_count = 1
-        text = self.get_text_question(question)
+        text = question.get_text_question()
         return question, text
-
-    def get_full_answer(self, question: ColorMixObj) -> AnyStr:
-        """ Полный ответ на вопрос """
-        text = "Если смешать {} и {}, то получится {}".format(
-            question.mix[0].ru,
-            question.mix[1].ru,
-            question.answer.ru
-        )
-        return text
-
-    def get_text_question(self, question: ColorMixObj) -> AnyStr:
-        """ Текст вопроса """
-        index = random.choice((0, 1))
-        index2 = 1 if index == 0 else 0
-        text = "Какой цвет получится - если смешать ^{}^ - и ^{}^?".format(
-            question.mix[index].ru,
-            question.mix[index2].ru
-        )
-        return text
 
 
 class MRCHandler(object):
@@ -145,7 +126,7 @@ class ColorMixHandler(MRCHandler):
                 welcome = 'Давай поиграем в ^красочки^? '\
                           'Я буду называть цвета. '\
                           'А ваша задача отгадать, какой цвет получится, если их смешать...'
-            return ActionResponse(welcome + text)
+            return ActionResponse(tts=welcome + text)
 
         # Пришёл ответ на вопрос
         if self.state.questions:
@@ -155,19 +136,17 @@ class ColorMixHandler(MRCHandler):
 
             # если просит повторить вопрос
             if self.is_repeat_request:
-                question_text = self.state.get_text_question(current_question)
-                return ActionResponse('Повторяю вопрос! {}'.format(question_text))
+                question_text = current_question.get_text_question()
+                return ActionResponse(tts='Повторяю вопрос! {}'.format(question_text))
 
             # если угадали
             if current_question.user_answer_is_valid(str(message.request.command)):
-                good_text_for_display = 'Верно! Получится {}. '.format(answer)
                 good_text = 'Верно! <speaker audio=\"marusia-sounds/game-win-1\"> Получится {}. '.format(answer)
                 self.state.scores += 1
                 if self.state.can_next:
                     question, text = self.state.next_question()
-                    text_for_display = '{} Следующий ^вопрос^ - {}'.format(good_text_for_display, text)
                     text_for_voice = '{} Следующий ^вопрос^ - {}'.format(good_text, text)
-                    return ActionResponse(text_for_display, tts=text_for_voice)
+                    return ActionResponse(tts=text_for_voice)
                 else:
                     if self.state.scores == self.state.MAX:
                         result_text = 'Поздравляю! У вас ^отличный^ результат!'
@@ -177,36 +156,29 @@ class ColorMixHandler(MRCHandler):
                         result_text = ''
                     new_text = '{} Игра завершена! {} ^Вы^ набрали ^{}^. Хотите сыграть ещё раз? Да или нет?'.format(good_text, result_text, self.state.scores_verbose)
                     self.state.action = RepeatHandler.name
-                    return ActionResponse(new_text)
+                    return ActionResponse(tts=new_text)
 
             else:  # не угадали
 
                 # Если попытка 1, 2, 3 - то проверяем
                 if self.state.try_count < self.state.MAX_TRY_COUNT:
 
-                    question_text = self.state.get_text_question(current_question)
-                    text_for_display = 'Не верно! Попробуйте ещё раз! {}'.format(question_text)
-                    text_for_voice = 'Не верно! <speaker audio=\"marusia-sounds/game-loss-2\"> попр`обуйте ещё раз! {}'.format(question_text)
+                    question_text = current_question.get_text_question()
+                    text_for_voice = 'Не верно! <speaker audio=\"marusia-sounds/game-loss-2\"> Попр`обуйте ещё раз! {}'.format(question_text)
                     self.state.try_count += 1
-                    return ActionResponse(text_for_display, tts=text_for_voice)
+                    return ActionResponse(tts=text_for_voice)
                 else:
                     # Если попытки кончились
                     if self.state.can_next:
                         question, text = self.state.next_question()
-                        new_text_for_display = 'Правильный ответ - {}! Переходим к следующему вопросу! {}'.format(
-                            self.state.get_full_answer(current_question),
-                            text
-                        )
                         new_text_for_voice = '<speaker audio=\"marusia-sounds/game-loss-2\"> Правильный ответ - ^{}^! Переходим к следующему вопросу! {}'.format(
-                            self.state.get_full_answer(current_question),
+                            current_question.get_full_answer(),
                             text
                         )
-                        return ActionResponse(new_text_for_display, tts=new_text_for_voice)
+                        return ActionResponse(tts=new_text_for_voice)
                     else:
-                        answer_text_for_display = 'Правильный ответ - {}!'\
-                            .format(self.state.get_full_answer(current_question))
                         answer_text = '<speaker audio=\"marusia-sounds/game-loss-2\">Правильный ответ - ^{}^!'\
-                            .format(self.state.get_full_answer(current_question))
+                            .format(current_question.get_full_answer())
 
                         if self.state.scores == self.state.MAX:
                             result_text = 'Поздравляю! У вас ^отличный^ результат!'
@@ -215,12 +187,10 @@ class ColorMixHandler(MRCHandler):
                         else:
                             result_text = ''
 
-                        new_text_for_display = '{} Игра завершена! {} Вы набрали {}. Хотите сыграть ещё раз? Да или нет?' \
-                            .format(answer_text_for_display, result_text, self.state.scores_verbose)
                         new_text_for_voice = '{} Игра завершена! {} ^Вы^ набрали ^{}^. Хотите сыграть ещё раз? Да или нет?'\
                             .format(answer_text, result_text, self.state.scores_verbose)
                         self.state.action = RepeatHandler.name
-                        return ActionResponse(new_text_for_display, tts=new_text_for_voice)
+                        return ActionResponse(tts=new_text_for_voice)
 
 
 class RepeatHandler(MRCHandler):
@@ -246,8 +216,8 @@ class RepeatHandler(MRCHandler):
         else:
             # попрощаться
             self.state.end_session = True
-            text = 'До сви`дания! Приходите ^ещё^, помешать кр`асочки'
-            return ActionResponse(text)
+            text = 'До сви`дания! Приходите ^ещё^, помешать кр`асочки.'
+            return ActionResponse(tts=text)
 
 
 class ColorProcessor(object):

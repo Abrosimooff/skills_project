@@ -1,5 +1,7 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
+from core.utils.base import tts_to_text
+
 
 class MetaWrap(object):
 
@@ -65,9 +67,11 @@ class MRCMessageWrap(object):
 class ActionResponse(object):
     """  Ответ MRCHandler в методе action """
 
-    def __init__(self, text, tts=None) -> None:
+    def __init__(self, text=None, tts=None) -> None:
         self.text = text
         self.tts = tts
+        if not text and tts:
+            self.text = tts_to_text(tts)
 
 
 class MRCResponseDict(object):
