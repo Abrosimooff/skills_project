@@ -123,7 +123,7 @@ class ColorMixHandler(MRCHandler):
             if kwargs.get('from_repeat'):
                 welcome = 'Начинаем заново! Уд`ачи! '
             else:
-                welcome = 'Давай поиграем в ^красочки^? '\
+                welcome = 'Давай поиграем в ^"Угадай цвет"^? '\
                           'Я буду называть цвета. '\
                           'А ваша задача отгадать, какой цвет получится, если их смешать...'
             return ActionResponse(tts=welcome + text)
@@ -145,7 +145,7 @@ class ColorMixHandler(MRCHandler):
                 self.state.scores += 1
                 if self.state.can_next:
                     question, text = self.state.next_question()
-                    text_for_voice = '{} Следующий ^вопрос^ - {}'.format(good_text, text)
+                    text_for_voice = '{} Следующий ^вопрос^ — {}'.format(good_text, text.lower())
                     return ActionResponse(tts=text_for_voice)
                 else:
                     if self.state.scores == self.state.MAX:
@@ -171,13 +171,13 @@ class ColorMixHandler(MRCHandler):
                     # Если попытки кончились
                     if self.state.can_next:
                         question, text = self.state.next_question()
-                        new_text_for_voice = '<speaker audio=\"marusia-sounds/game-loss-2\"> Правильный ответ - ^{}^! Переходим к следующему вопросу! {}'.format(
+                        new_text_for_voice = '<speaker audio=\"marusia-sounds/game-loss-2\"> Правильный ответ — ^{}^! Переходим к следующему вопросу! {}'.format(
                             current_question.get_full_answer(),
                             text
                         )
                         return ActionResponse(tts=new_text_for_voice)
                     else:
-                        answer_text = '<speaker audio=\"marusia-sounds/game-loss-2\">Правильный ответ - ^{}^!'\
+                        answer_text = '<speaker audio=\"marusia-sounds/game-loss-2\">Правильный ответ — ^{}^!'\
                             .format(current_question.get_full_answer())
 
                         if self.state.scores == self.state.MAX:
@@ -224,7 +224,7 @@ class ColorProcessor(object):
     """ Процесс обработки сообщения от Маруси и формирование ответа """
 
     def do_exit(self):
-        return MRCResponseDict(text='До сви`дания! Приходите ещё, помешать кр`асочки', end_session=True)
+        return MRCResponseDict(text='До сви`дания! Приходите ещё, помешать кр`асочки.', end_session=True)
 
     def get_state(self, message: MRCMessageWrap):
         if message.state.session:
