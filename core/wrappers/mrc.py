@@ -64,16 +64,6 @@ class MRCMessageWrap(object):
         self.state = StateWrap(message.get('state', {}))
 
 
-class ActionResponse(object):
-    """  Ответ MRCHandler в методе action """
-
-    def __init__(self, text=None, tts=None) -> None:
-        self.text = text
-        self.tts = tts
-        if not text and tts:
-            self.text = tts_to_text(tts)
-
-
 class MRCResponseDict(object):
 
     def __init__(self, text, end_session, tts=None, buttons=None, card=None) -> None:
@@ -114,3 +104,13 @@ class MRCResponse(object):
         if self.user_state:
             data['user_state_update'] = self.user_state
         return data
+
+
+class ActionResponse(object):
+    """  Ответ MRCHandler в методе action """
+
+    def __init__(self, text=None, tts=None) -> None:
+        self.text = text
+        self.tts = tts
+        if not text and tts:
+            self.text = tts_to_text(tts)

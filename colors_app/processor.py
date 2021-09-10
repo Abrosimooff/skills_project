@@ -3,11 +3,11 @@ from __future__ import unicode_literals, absolute_import, division, print_functi
 import random
 from typing import AnyStr
 
-from colors_app.const import COLOR_MIX, ColorObj, ColorMixObj
-from colors_app.phrases import SIMPLE_REPEAT_PHRASES, NEW_GAME_PHRASES
+from colors_app.const import COLOR_MIX
+from core.phrases import SIMPLE_REPEAT_PHRASES, NEW_GAME_PHRASES
+from core.utils.const import MRC_EXIT_COMMAND
+from core.utils.handlers import MRCHandler
 from core.wrappers.mrc import MRCMessageWrap, MRCResponse, MRCResponseDict, ActionResponse
-
-MRC_EXIT_COMMAND = "on_interrupt"
 
 
 SCORES_STR = {
@@ -67,38 +67,11 @@ class ColorState:
         return question, text
 
 
-class MRCHandler(object):
-    """ Все обработчики должыы наследоваться от этого """
-    name = None
-
-    def __init__(self, message: MRCMessageWrap, state) -> None:
-        self.message = message
-        self.state = state
-
-    @classmethod
-    def get_handler(cls, handler_name: AnyStr):
-        for handler_class in cls.__subclasses__():
-            if handler_class.name == handler_name:
-                return handler_class
-
-    def action(self, **kwargs):
-        raise NotImplementedError
-
-    def process(self, **kwargs):
-        action_response = self.action(**kwargs)  # type: ActionResponse
-        return MRCResponse(
-            response=MRCResponseDict(
-                text=action_response.text,
-                end_session=self.state.end_session,
-                tts=action_response.tts
-            ),
-            session=self.message.session,
-            version=self.message.version,
-            session_state=self.state if not self.state.end_session else None
-        )
+class ColorsAppMRCHandler(MRCHandler):
+    """ Базовый хэндлер скилла красочки """
 
 
-class ColorMixHandler(MRCHandler):
+class ColorMixHandler(ColorsAppMRCHandler):
     """ Обработчик ответа на вопрос "Играем ещё раз ?" """
     name = 'handle_color_mix'
 
@@ -193,7 +166,7 @@ class ColorMixHandler(MRCHandler):
                         return ActionResponse(tts=new_text_for_voice)
 
 
-class RepeatHandler(MRCHandler):
+class RepeatHandler(ColorsAppMRCHandler):
     """ Обработчик ответа на вопрос "Играем ещё раз ?" """
     name = 'handle_repeat'
 
@@ -240,7 +213,6 @@ class ColorProcessor(object):
         return state
 
     def process(self, message: MRCMessageWrap) -> MRCResponse:
-
         # Если сигнал - что пользователь вышел из скилла
         if message.request.command == MRC_EXIT_COMMAND:
             _response_dict = self.do_exit()
@@ -251,7 +223,7 @@ class ColorProcessor(object):
             )
 
         state = self.get_state(message)
-        handler_class = MRCHandler.get_handler(handler_name=state.action)
+        handler_class = ColorsAppMRCHandler.get_handler(handler_name=state.action)
         handler = handler_class(message=message, state=state)
         mrc_response = handler.process()
         return mrc_response
