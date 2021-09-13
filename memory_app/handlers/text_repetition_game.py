@@ -60,8 +60,7 @@ class MemoryAppTextRepetitionGameMRCHandler(MemoryAppMRCHandler):
             """ Рандомно выбрать текст """
             id = None
             while id == exclude_text_id:  # исключить текст = exclude_text_id
-                text = random.choice(TEXT_LIST)
-                id = TEXT_LIST.index(text)
+                id = random.choice(list(range(len(TEXT_LIST))))
                 return id
 
         if self.game_state.text_id is None:
