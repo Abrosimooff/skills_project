@@ -80,9 +80,10 @@ class MemoryAppTextRepetitionGameMRCHandler(MemoryAppMRCHandler):
         if self.game_state.text_id is None:  # Если текст не выбран - то начинаем
             text_line = self.get_next_text_line(exclude_text_id)
             if text_line:
-                text = 'Сейчас я буду зачитывать небольшой текст! '\
-                       'После того как я прочитаю предложение, вы должны будете его повторить! '\
-                       'Затем, я прочитаю следующее предложение! Вы повторите! И так далее... Я начинаю! '
+                text = 'Ваша задача — набрать 100 баллов! Сейчас я буду зачитывать небольшой рассказ! '\
+                       'После того, как я прочитаю предложение, вам нужно будет его повторить! ' \
+                       'Чем точнее вы повторите, тем больше вы заработаете баллов! ' \
+                       'Слушайте внимательно, начинаем! '
                 return ActionResponse(text=text, tts=text+text_line)
 
             else:
@@ -100,8 +101,12 @@ class MemoryAppTextRepetitionGameMRCHandler(MemoryAppMRCHandler):
             if text_line:
                 return ActionResponse(text='Запоминайте следующее предложение.', tts=audio+text_line)
             else:
-                self.game_state.action = 'text_repetition_game_repeat'
-                repeat_text = 'Сыграем ещё раз?'
+                # self.game_state.action = 'text_repetition_game_repeat'
+                self.state.action = 'select_game'
+                self.state.select_mode = True
+                repeat_text = 'Сыграем ещё раз в "Запоминай рассказ" или в "Запоминай слова"? ' \
+                              'Или скажите "Выход", чтобы закончить.'
+
                 avg_score = round(sum(self.game_state.scores) / len(self.game_state.scores))
                 score_text = get_score_text(avg_score)
 

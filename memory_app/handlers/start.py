@@ -17,6 +17,10 @@ class MemoryAppSelectGame(MemoryAppMRCHandler):
                 if name in user_command:
                     return game
 
+    def check_exit(self):
+        user_command = clean_text(self.message.request.command)
+        return 'выход' in user_command
+
     def action(self, **kwargs):
         if not self.state.select_mode:
             self.state.select_mode = True
@@ -37,5 +41,9 @@ class MemoryAppSelectGame(MemoryAppMRCHandler):
                 handler = MemoryAppMRCHandler.get_handler(state.get_action())
                 action_response = handler(message=self.message, state=state).action()
                 return action_response
+            elif self.check_exit():
+                self.state.end_session = True
+                return ActionResponse(tts='До сви`дания! Возвращайтесь ещё, потренеровать память.')
             else:
-                return ActionResponse('Выберите игру! "Запоминай слова" или "Запоминай рассказ" ?')
+                return ActionResponse('Выберите игру! "Запоминай слова" или "Запоминай рассказ" ? '
+                                      'Или скажите "Выход", чтобы закончить.')

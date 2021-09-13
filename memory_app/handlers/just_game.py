@@ -168,9 +168,14 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
     def game_over(self):
         """ Закончить игру """
         # self.state.end_session = True
-        self.game_state.action = 'just_game_repeat'
 
-        repeat_text = 'Сыграем ещё?'
+        # self.game_state.action = 'just_game_repeat'
+        # repeat_text = 'Сыграем ещё?'
+
+        self.state.action = 'select_game'
+        self.state.select_mode = True
+        repeat_text = 'Сыграем ещё раз в "Запоминай слова" или в "Запоминай рассказ"? ' \
+                      'Или скажите "Выход", чтобы закончить.'
         score_text = get_score_text(self.game_state.scores)
         # max 25 score
 
