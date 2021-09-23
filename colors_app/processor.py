@@ -128,7 +128,7 @@ class ColorMixHandler(ColorsAppMRCHandler):
             # если просит повторить вопрос или говорит "не знаю"
             if self.is_repeat_request:
                 question_text = current_question.get_text_question()
-                return ActionResponse(tts='Чтобы перейти к следующему вопросу — скажите «сдаюсь»!\n '
+                return ActionResponse(tts='Чтобы перейти к следующему вопросу, скажите: «Сдаюсь»!\n '
                                           'А сейчас повторяю вопрос! {}'.format(question_text))
 
             # Если пользователь сдаётся
