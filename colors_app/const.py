@@ -79,3 +79,8 @@ COLOR_MIX = [
     ColorMixObj(anwser=Color.BIRUZA, mix=(Color.GREEN, Color.BLUE)),
     ColorMixObj(anwser=Color.BLUE, mix=(Color.LIGHT_BLUE, Color.PURPLE)),
 ]
+
+# желтый + зеленый = салатовый
+# Коричневый + Зелёный = Хаки
+# Зеленый + Желтый = Оливковый
+# https://dpva.ru/Guide/GuidePhysics/LightAndColor/ColorCodification/ColorsMixing/ тут сложыные цвета

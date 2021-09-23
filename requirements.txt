@@ -1,2 +1,4 @@
 django==3.2.6
 fuzzywuzzy==0.18.0
+requests
+pickle
