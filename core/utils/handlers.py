@@ -20,6 +20,7 @@ class MRCHandler(object):
                 return handler_class
 
     def action(self, **kwargs):
+        # type: () -> ActionResponse
         raise NotImplementedError
 
     def process(self, **kwargs):

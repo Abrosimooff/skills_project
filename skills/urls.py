@@ -18,9 +18,11 @@ from django.urls import path
 
 from colors_app.views import MRCSkillColorsView
 from memory_app.views import MRCMemoryGameView
+from online_dozor_app.views import MRCOnlineDozorView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('skills/marusia/colors/', MRCSkillColorsView.as_view(), name='mrc-skills-colors'),
     path('skills/marusia/memory/', MRCMemoryGameView.as_view(), name='mrc-skills-memory'),
+    path('skills/marusia/online_dozor/', MRCOnlineDozorView.as_view(), name='mrc-skills-online-dozor'),
 ]

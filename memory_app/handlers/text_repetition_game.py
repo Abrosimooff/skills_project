@@ -9,40 +9,6 @@ from core.wrappers.mrc import ActionResponse
 from memory_app.const.texts import TEXT_LIST
 from memory_app.handlers import MemoryAppMRCHandler
 
-# todo 2. Звуки игры
-# todo 3. Интонации проверить в текстах особенно
-# todo 5. Добавить слов и текстов
-from memory_app.states.text_repetition_game import TextRepetitionGameState
-
-
-class MemoryAppTextRepetitionGameRepeatMRCHandler(MemoryAppMRCHandler):
-    """ Выбор категории"""
-    name = 'text_repetition_game_repeat'
-
-    @property
-    def is_repeat(self):
-        user_text = clean_text(self.message.request.command)
-        for item in NEW_GAME_PHRASES:
-            if item.lower() in user_text:
-                return True
-        return False
-
-    def action(self, **kwargs):
-        if self.is_repeat:
-            # Сбросит state и вернуть текст новой игры
-            self.state.game_state = TextRepetitionGameState({})
-            self.game_state = self.state.game_state
-            handler = MemoryAppTextRepetitionGameMRCHandler(message=self.message, state=self.state)
-            kw = {'exclude_text_id': self.game_state.text_id}  #  исклчюаем текущий текст в новой игре
-            action_response = handler.action(**kw)  # type: ActionResponse
-            return action_response
-        else:
-            # todo выход в главное меню
-            # попрощаться
-            self.state.end_session = True
-            text = 'До сви`дания! Надеюсь, вам было интересно потренеровать свою память!'
-            return ActionResponse(tts=text)
-
 
 class MemoryAppTextRepetitionGameMRCHandler(MemoryAppMRCHandler):
     """ Выбор категории"""
@@ -101,7 +67,6 @@ class MemoryAppTextRepetitionGameMRCHandler(MemoryAppMRCHandler):
             if text_line:
                 return ActionResponse(text='Запоминайте следующее предложение.', tts=audio+text_line)
             else:
-                # self.game_state.action = 'text_repetition_game_repeat'
                 self.state.action = 'select_game'
                 self.state.select_mode = True
                 repeat_text = 'Сыграем ещё раз в "Запоминай рассказ" или в "Запоминай слова"? ' \
