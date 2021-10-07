@@ -29,7 +29,8 @@ class MRCHandler(object):
             response=MRCResponseDict(
                 text=action_response.text,
                 end_session=self.state.end_session,
-                tts=action_response.tts
+                tts=action_response.tts,
+                buttons=action_response.buttons
             ),
             session=self.message.session,
             version=self.message.version,

@@ -9,6 +9,12 @@ class MRCView(View):
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Length, Content-Type, Date'
+        # response.headers['Access-Control-Allow-Origin'] = '*'
+        # response.headers['Access-Control-Allow-Headers'] = 'Content-Length, Content-Type, Date'
+
+        # из документации
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept'
+        response.headers['Access-Control-Allow-Origin'] = 'https://skill-debugger.marusia.mail.ru'
+
+
         return response

@@ -5,10 +5,10 @@ import random
 from django.utils.functional import cached_property
 
 from core.phrases import NEW_GAME_PHRASES
-from core.utils.base import clean_text, get_score_text
-from core.wrappers.mrc import ActionResponse
+from core.utils.base import clean_text, get_score_text, tts_to_text
+from core.wrappers.mrc import ActionResponse, Button
 from memory_app.const.categories import CATEGORIES
-from memory_app.const.game import WORD_RU, NEXT_ROUND_WORDS
+from memory_app.const.game import WORD_RU, NEXT_ROUND_WORDS, NEXT_ROUND_SUPER_PHRASES, NEXT_ROUND_WORD_COUNT
 from memory_app.handlers.base import MemoryAppMRCHandler
 from memory_app.states.just_game import JustGameState
 
@@ -21,21 +21,25 @@ class MemoryAppJustGameCategorySelectMRCHandler(MemoryAppMRCHandler):
         if not self.game_state.category:  # Если категория не выбрана
             self.game_state.action = 'just_game_category_check'
 
-            category_text = 'У меня есть слова из категорий - "дом", "еда" и "природа"! '\
-                            'Выберите одну из этих категорий или скажите "всё", '\
-                            'чтобы играть со всеми категориями сразу.'
+            category_text = 'Выберите тему для игры: дом, еда, природа. ' \
+                            'Если хотите играть со всеми категориями, скажите: «всё».'
+            category_text_tts = 'Выберите тему для игры. Дом. Еда. Природа. ' \
+                                'Если хотите играть со всеми категориями, скажите: «всё».'
 
-            next_round_text = NEXT_ROUND_WORDS[2]
-            next_round_text2 = NEXT_ROUND_WORDS[3]
+            next_round_text = NEXT_ROUND_WORDS[2].capitalize()
+            next_round_text2 = NEXT_ROUND_WORDS[3].capitalize()
 
             if kwargs.get('from_repeat'):
-                tts = 'Выбираем тему для игры и по`ехали! {}'.format(category_text)
+                text = category_text
+                tts = category_text_tts
             else:
-                tts = 'Игра проходит в 5 раундов, в которых вам нужно запоминать мои слова! '\
-                      'А затем повторить их! Если не можете закончить раунд - скажите "{}" или "{}"! ' \
-                      'Давайте `выбирем тему для игры? {}'.format(next_round_text, next_round_text2, category_text)
+                rules_text = 'В игре 5 раундов. Я называю слова, а вы мне их повторяете! Если не можете ' \
+                             'закончить раунд, скажите: «{}» или «{}».'.format(next_round_text, next_round_text2)
 
-            return ActionResponse(tts=tts)
+                text = '{}\n{}'.format(rules_text, category_text)
+                tts = '{}\n{}'.format(rules_text, category_text_tts)
+            buttons = [Button('Дом'), Button('Еда'), Button('Природа'), Button('Все темы')]
+            return ActionResponse(text=text, tts=tts, buttons=buttons)
 
 
 class MemoryAppJustGameCategoryCheckMRCHandler(MemoryAppMRCHandler):
@@ -59,8 +63,8 @@ class MemoryAppJustGameCategoryCheckMRCHandler(MemoryAppMRCHandler):
             return action_response
         else:
             return ActionResponse(tts='Я не поняла, какую вы хотите выбрать категорию — '
-                                      '"дом", "еда" или "природа" ? '
-                                      'Выберите одну из этих категорий или скажите "всё", '
+                                      '«дом», «еда» или «природа» ? '
+                                      'Выберите одну из этих категорий или скажите «всё», '
                                       'чтобы играть со всеми категориями сразу.')
 
 
@@ -87,7 +91,7 @@ class MemoryAppJustGameRepeatMRCHandler(MemoryAppMRCHandler):
             return action_response
         else:
             self.state.end_session = True
-            text = 'До сви`дания! Надеюсь, вам было интересно потренеровать свою память!'
+            text = 'До сви`дания! Надеюсь, вам было интересно потренеровать свою память.'
             return ActionResponse(tts=text)
 
 
@@ -114,6 +118,23 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
         """  Можно ли начинать следующий раунд """
         MAX = len(self.game_state.WORDS_ROUNDS)
         return self.current_round and self.current_round < MAX
+
+    def next_round(self) -> ActionResponse:
+        """ Ответ - Переход к следующему раунду  """
+        answered_words = self.game_state.answered_words
+
+        if not self.words_for_check:
+            prefix = random.choice(NEXT_ROUND_SUPER_PHRASES) + '<speaker audio=marusia-sounds/game-win-2>'
+        else:
+            phrase = random.choice(NEXT_ROUND_WORD_COUNT)
+            prefix = '{} {}.'.format(phrase, self.get_word_ru(len(answered_words)))
+
+        new_words_text = self.new_round()  # Вызывать в конце!!! (тут s state записываются уже слова нового раунда)
+
+        text = '{} Переходим к следующему. Раунд номер {}. Запоминайте слова.'.format(prefix, self.current_round)
+        audio = '<speaker audio=marusia-sounds/game-ping-1>'
+        tts = '{} {} {}'.format(text, audio, new_words_text)
+        return ActionResponse(text=text, tts=tts)
 
     def generate_words(self, category_index, count):
         """ Сгенерить слова для раунда """
@@ -151,31 +172,27 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
 
     def get_word_ru(self, count):
         """ Получить русское название "5 слов/1 слово" """
-        word_ru = WORD_RU.get(count, 'слов')
-        return '{} {}'.format(count, word_ru)
+        return WORD_RU.get(count) or '{} слов'.format(count)
 
     def new_round(self):
         """ Начинаем новый раунд, возвращаю текст новых слов """
-        new_words = self.generate_words(self.game_state.category, self.next_words_count)
-        self.game_state.words = new_words
+        new_words_list_tts = self.generate_words(self.game_state.category, self.next_words_count)
+        new_words_list_cleaned = [tts_to_text(word) for word in new_words_list_tts]
+        self.game_state.words = new_words_list_cleaned
         self.game_state.try_count = 0
         self.game_state.answered_words = []
 
-        new_words_prepared = map(lambda word: '^%s^' % word, new_words)
+        new_words_prepared = map(lambda word: '%s' % word.capitalize(), new_words_list_tts)
         new_words_text = '! '.join(new_words_prepared)
         return new_words_text
 
     def game_over(self):
         """ Закончить игру """
-        # self.state.end_session = True
-
-        # self.game_state.action = 'just_game_repeat'
-        # repeat_text = 'Сыграем ещё?'
-
         self.state.action = 'select_game'
         self.state.select_mode = True
-        repeat_text = 'Сыграем ещё раз в "Запоминай слова" или в "Запоминай рассказ"? ' \
-                      'Или скажите "Выход", чтобы закончить.'
+        repeat_text = 'Сыграем ещё раз? Или поиграем в «Запоминай рассказ»? ' \
+                      'Если хотите закончить, скажите: «Выход».'
+        buttons = [Button('Ещё раз'), Button('Запоминай рассказ'), Button('Выход')]
         score_text = get_score_text(self.game_state.scores)
         # max 25 score
 
@@ -188,9 +205,11 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
             audio = '<speaker audio=marusia-sounds/game-loss-3>'
             result_text = 'Вам есть к чему стремиться!'
 
-        return ActionResponse(tts='Вот и подошёл к концу последний раунд! Я готова объявить результат игры. '
-                                  'Вы набрали {} {}! {} {} Спасибо за игру! {}'
-                              .format(self.game_state.scores, score_text, audio, result_text, repeat_text))
+        return ActionResponse(
+            tts='Вот и подошёл к концу последний раунд. Вы набрали {} {}. {} {} Спасибо за игру! {}'
+                .format(self.game_state.scores, score_text, audio, result_text, repeat_text),
+            buttons=buttons
+        )
 
     def action(self, **kwargs):
         self.game_state.action = self.name
@@ -198,32 +217,15 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
         if self.is_skip_round:  # Если пользователь хочет пропустить раунд
 
             if self.can_next_round:  # Если можно начать новый раунд
-                answered_words = self.game_state.answered_words
-                new_words_text = self.new_round()
-                text = 'В этом раунде вы угадали {}! Переходим к следующему! ' \
-                       'Раунд номер {}! Запоминайте слова! Поехали!'.format(
-                    self.get_word_ru(len(answered_words)),
-                    self.current_round
-                )
-                return ActionResponse(text=text,
-                                      tts='В этом раунде вы угадали {}! .'
-                                          'Переходим к следующему! Раунд номер {}! '
-                                          'Запоминайте слова! Поехали! {}.'.format(
-                                          self.get_word_ru(len(answered_words)),
-                                          self.current_round,
-                                          new_words_text
-                                      )
-                                      )
+                return self.next_round()
             else:
                 return self.game_over()
 
         # Если нету слов - то начинаем
         if not self.game_state.words:
             new_words_text = self.new_round()
-            text = 'Начинаем первый раунд! Запоминайте слова, затем повторите мне их! Поехали!'
-            return ActionResponse(text=text, tts='Начинаем первый раунд! '
-                                                 'Запоминайте слова, затем повторите мне их! Поехали! {}'
-                                  .format(new_words_text))
+            text = 'Начинаем первый раунд. Запоминайте слова, затем повторите мне их. Поехали!'
+            return ActionResponse(text=text, tts='{} {}'.format(text, new_words_text))
         else:
 
             # Есть заданные слова - мы проверяем ответ пользователя.
@@ -231,57 +233,31 @@ class MemoryAppJustGameProcessMRCHandler(MemoryAppMRCHandler):
             words_for_check = self.words_for_check
 
             if not checked_words:  # Если не угадали ни одного слова
-
                 # Если попытки есть
                 if self.game_state.try_count < self.game_state.MAX_TRY_COUNT:
                     self.game_state.try_count += 1
-                    return ActionResponse(tts='Не нашла вашего ответа среди правильных! Назовите ещё {} '
-                                              'или скажите "сдаюсь", чтобы перейти в следующий раунд.'.format(
-                        self.get_word_ru(len(words_for_check))
-                    )
+                    return ActionResponse(
+                        tts='Не нашла вашего ответа среди правильных. Назовите ещё {} или скажите: «Сдаюсь»'
+                            .format(self.get_word_ru(len(words_for_check))),
+                        buttons=[Button('Сдаюсь')]
                     )
                 else:
                     # Если попытки кончились
-
-                    if self.can_next_round:  # Можно начать след раунд
-                        answered_words = self.game_state.answered_words
-                        new_words_text = self.new_round()
-                        text = 'В этом раунде вы угадали {}! Переходим к следующему! ' \
-                               'Раунд номер {}! Запоминайте слова! Поехали!'.format(
-                            self.get_word_ru(len(answered_words)),
-                            self.current_round
-                        )
-                        return ActionResponse(text=text,
-                                              tts='В этом раунде вы угадали {}! Переходим к следующему! '
-                                                  'Раунд номер {}! Запоминайте слова! Поехали! {}.'.format(
-                            self.get_word_ru(len(answered_words)),
-                            self.current_round,
-                            new_words_text
-                        )
-                        )
-                    else:   # Игра завершена!
+                    if self.can_next_round:         # Можно начать след раунд
+                        return self.next_round()
+                    else:                           # Игра завершена!
                         return self.game_over()
 
             if words_for_check:
-                checked_words = map(lambda word: '^"{}"^'.format(word), checked_words)
+                checked_words = map(lambda word: '^{}^'.format(word), checked_words)
                 checked_words_text = ', '.join(checked_words)
-                return ActionResponse(tts='Хорошо! Я засчитала {}! Назовите ещё {} '
-                                          'или скажите "сдаюсь", чтобы перейти в следующий раунд.'.format(
-                    # self.get_word_ru(len(checked_words)),
-                    checked_words_text,
-                    len(words_for_check)
-                )
+                return ActionResponse(
+                    tts='Хорошо! Я засчитала: {}. Назовите ещё {} или скажите: «Сдаюсь», чтобы перейти в следующий раунд.'
+                        .format(checked_words_text, self.get_word_ru(len(words_for_check))),
+                    buttons=[Button('Сдаюсь')]
                 )
             else:
-                if self.can_next_round: # Можно начать след. раунд
-                    new_words_text = self.new_round()
-                    text = 'Супер! Все слова этого раунда засчитаны! Переходим к следующему! '\
-                           'Раунд номер {}! Запоминайте слова!'.format(self.current_round)
-                    return ActionResponse(text=text, tts='<speaker audio=marusia-sounds/game-win-2> '
-                                                         'Супер! Все слова этого раунда засчитаны! '
-                                                         'Переходим к следующему! '
-                                                         'Раунд номер {}! Запоминайте слова! {} '.format(
-                        self.current_round, new_words_text)
-                   )
+                if self.can_next_round:  # Можно начать след. раунд
+                    return self.next_round()
                 else:  # конец игры
                     return self.game_over()

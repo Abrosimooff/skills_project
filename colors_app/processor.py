@@ -8,7 +8,7 @@ from core.phrases import SIMPLE_REPEAT_PHRASES, NEW_GAME_PHRASES
 from core.utils.base import get_score_text, clean_text
 from core.utils.const import MRC_EXIT_COMMAND
 from core.utils.handlers import MRCHandler
-from core.wrappers.mrc import MRCMessageWrap, MRCResponse, MRCResponseDict, ActionResponse
+from core.wrappers.mrc import MRCMessageWrap, MRCResponse, MRCResponseDict, ActionResponse, Button
 
 
 class ColorState:
@@ -101,7 +101,7 @@ class ColorMixHandler(ColorsAppMRCHandler):
                         )
 
         self.state.action = RepeatHandler.name
-        return ActionResponse(tts=finish_text)
+        return ActionResponse(tts=finish_text, buttons=[Button('Ещё раз'), Button('Выход')])
 
     def action(self, **kwargs):
         """ Должен вернуть, что нужно сказать марусе и как изменить стейт  """
@@ -128,8 +128,11 @@ class ColorMixHandler(ColorsAppMRCHandler):
             # если просит повторить вопрос или говорит "не знаю"
             if self.is_repeat_request:
                 question_text = current_question.get_text_question()
-                return ActionResponse(tts='Чтобы перейти к следующему вопросу, скажите: «Сдаюсь»!\n '
-                                          'А сейчас повторяю вопрос! {}'.format(question_text))
+                return ActionResponse(
+                    tts='Чтобы перейти к следующему вопросу, скажите: «Сдаюсь»!\n А сейчас повторяю вопрос! {}'
+                        .format(question_text),
+                    buttons=[Button('Сдаюсь')]
+                )
 
             # Если пользователь сдаётся
             if self.is_user_looser:

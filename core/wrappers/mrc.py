@@ -1,6 +1,29 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
+from typing import AnyStr, List, Dict
+
 from core.utils.base import tts_to_text
+
+
+class Button(object):
+    title: AnyStr
+    payload: Dict
+    url: AnyStr
+
+    def __init__(self, title, payload=None, url=None) -> None:
+        self.title = title
+        self.payload = payload
+        self.url = url
+
+    def serialize(self):
+        serialized = dict(
+            title=self.title,
+        )
+        if self.payload:
+            serialized['payload'] = self.payload
+        if self.url:
+            serialized['url'] = self.url
+        return serialized
 
 
 class MetaWrap(object):
@@ -66,10 +89,11 @@ class MRCMessageWrap(object):
 
 class MRCResponseDict(object):
 
-    def __init__(self, text, end_session, tts=None, buttons=None, card=None) -> None:
+    def __init__(self, text, end_session, tts=None, buttons: List[Button] = None, card=None) -> None:
         self.text = text
         self.end_session = end_session
         self.tts = tts
+        self.buttons = buttons or []
 
     def serialize(self):
         response = dict(
@@ -78,6 +102,8 @@ class MRCResponseDict(object):
         )
         if self.tts:
             response['tts'] = self.tts
+        if self.buttons:
+            response['buttons'] = [b.serialize() for b in self.buttons]
 
         return response
 
@@ -108,9 +134,11 @@ class MRCResponse(object):
 
 class ActionResponse(object):
     """  Ответ MRCHandler в методе action """
+    text: AnyStr
+    tts: AnyStr
+    buttons: List
 
-    def __init__(self, text=None, tts=None) -> None:
-        self.text = text
+    def __init__(self, text: AnyStr = None, tts: AnyStr = None, buttons: List[Button] = None) -> None:
+        self.text = tts_to_text(text or tts)
         self.tts = tts
-        if not text and tts:
-            self.text = tts_to_text(tts)
+        self.buttons = buttons or []
