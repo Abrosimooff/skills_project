@@ -3,6 +3,7 @@ from __future__ import unicode_literals, absolute_import, division, print_functi
 from typing import AnyStr, List, Dict
 
 from core.utils.base import tts_to_text
+from core.wrappers.state import BaseUserState
 
 
 class Button(object):
@@ -26,12 +27,44 @@ class Button(object):
         return serialized
 
 
+class Card:
+    type: AnyStr
+
+    def serialize(self):
+        raise NotImplementedError
+
+
+class CardLink(Card):
+    """ Карточка - сылка """
+    type = 'Link'
+    url: AnyStr
+    title: AnyStr
+    text: AnyStr
+    image_id: int
+
+    def __init__(self, url: AnyStr, title: AnyStr, text: AnyStr, image_id: int) -> None:
+        self.url = url
+        self.title = title
+        self.text = text
+        self.image_id = image_id
+
+    def serialize(self):
+        return dict(
+            type=self.type,
+            url=self.url,
+            title=self.title,
+            text=self.text,
+            image_id=self.image_id,
+        )
+
+
 class MetaWrap(object):
 
     def __init__(self, meta) -> None:
         self.locale = meta['locale']
         self.timezone = meta['timezone']
         self.interfaces = meta['interfaces']
+        self._city_ru = meta.get('_city_ru')
 
 
 class SessionWrap(object):
@@ -89,11 +122,12 @@ class MRCMessageWrap(object):
 
 class MRCResponseDict(object):
 
-    def __init__(self, text, end_session, tts=None, buttons: List[Button] = None, card=None) -> None:
+    def __init__(self, text, end_session, tts=None, buttons: List[Button] = None, card: Card = None) -> None:
         self.text = text
         self.end_session = end_session
         self.tts = tts
         self.buttons = buttons or []
+        self.card = card
 
     def serialize(self):
         response = dict(
@@ -104,6 +138,8 @@ class MRCResponseDict(object):
             response['tts'] = self.tts
         if self.buttons:
             response['buttons'] = [b.serialize() for b in self.buttons]
+        if self.card:
+            response['card'] = self.card.serialize()
 
         return response
 
@@ -112,12 +148,12 @@ class MRCResponse(object):
     """ Ответ Марусе"""
 
     def __init__(self, response: MRCResponseDict, session: SessionWrap, version: int,
-                 session_state=None , user_state=None) -> None:
+                 session_state=None, user_state_update: BaseUserState = None) -> None:
         self.response = response
         self.session = session
         self.version = version
         self.session_state = session_state
-        self.user_state = user_state
+        self.user_state_update = user_state_update
 
     def serialize(self):
         data = dict(
@@ -127,8 +163,9 @@ class MRCResponse(object):
         )
         if self.session_state:
             data['session_state'] = self.session_state.serialize()
-        if self.user_state:
-            data['user_state_update'] = self.user_state
+        if self.user_state_update:
+            data['user_state_update'] = self.user_state_update.serialize()
+            print(data['user_state_update'])
         return data
 
 
@@ -137,8 +174,10 @@ class ActionResponse(object):
     text: AnyStr
     tts: AnyStr
     buttons: List
+    card: Card
 
-    def __init__(self, text: AnyStr = None, tts: AnyStr = None, buttons: List[Button] = None) -> None:
+    def __init__(self, text: AnyStr = None, tts: AnyStr = None, buttons: List[Button] = None, card: Card = None) -> None:
         self.text = tts_to_text(text or tts)
         self.tts = tts
         self.buttons = buttons or []
+        self.card = card
