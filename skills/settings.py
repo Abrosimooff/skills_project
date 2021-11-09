@@ -27,6 +27,14 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['https://skill-debugger.marusia.mail.ru', '127.0.0.1', 'localhost', 'skills.na4u.ru']
 
+PRODUCTION_HOSTNAME = 'https://skills.na4u.ru/'
+
+# try:
+#     import socket
+#     HOSTNAME = socket.gethostname()
+# except:
+#     pass
+
 
 # Application definition
 
@@ -119,6 +127,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
