@@ -63,28 +63,63 @@ class AdventCalendarMRCHandler(MRCHandler):
         return datetime.date(self.today.year, 12, 31)
 
     @cached_property
+    def days_before_new_year(self) -> int:
+        """ Сколько дней до нового года ? """
+        return (self.new_year_date - self.today).days
+
+    @cached_property
     def is_active(self):
         """ Активен ли сейчас календарь ? работает с 1 декабря до 31 декабря """
-        days = (self.new_year_date - self.today).days
-        return days <= 31
+        return self.days_before_new_year <= 31
+
+    def not_active_response(self):
+        """ Когда сегодня не декабрь """
+
+        if self.days_before_new_year <= 60:
+            text = 'Мы напишем письмо деду морозу, ' \
+                   'посмотрим новогодние фильмы и мультфильмы, ' \
+                   'сделаем что-то красивое своими руками и выполним ещё много интересных заданий. ' \
+                   'Приходите 1 декабря, я буду Вас ждать.'
+            tts = 'Мы напишем письмо деду ^морозу^! ' \
+                   'Посмотрим новогодние фильмы и мультфильмы! ' \
+                   'Сделаем что-то красивое своими руками и выполним ещё много интересных заданий! ' \
+                   'Приходите первого декабря, я буду Вас ждать.'
+        elif self.days_before_new_year > 350:
+            text = 'Поздравляю вас с наступившим новым годом! ' \
+                   'Надеюсь, вам понравились мои задания. ' \
+                   'Приходите на следующий год.'
+            tts = text
+        else:
+            text = 'До нового года ещё далеко, я буду вас ждать 1 декабря.'
+            tts = 'До нового года ещё далеко, я буду вас ждать первого декабря.'
+
+        self.state.end_session = True
+        start_text = 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
+                     'И начинается он 1 декабря! {}'.format(text)
+        start_tts = 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
+                    'И начинается он первого декабря! {}'.format(tts)
+        return ActionResponse(text=start_text, tts=start_tts)
 
     def today_response(self, welcome=False):
-        calendar = AdventCalendarTasks(self.user_state.age)
-        task = calendar.get(self.today)
-        task_tomorrow = calendar.get(self.tomorrow)
+        if self.is_active:
+            calendar = AdventCalendarTasks(self.user_state.age)
+            task = calendar.get(self.today)
+            task_tomorrow = calendar.get(self.tomorrow)
 
-        if task:
-            tts = 'Вот ваше задание на сегодня. {}. '.format(task.text)
-            if welcome:
-                tts = 'Желаю Вам приятного ожидания Нового года! ' + tts
+            if task:
+                tts = 'Вот ваше задание на сегодня. {}. '.format(task.text)
+                if welcome:
+                    tts = 'Желаю Вам приятного ожидания Нового года! ' + tts
 
-            if task_tomorrow and task_tomorrow.text_yesterday:
-                tomorrow_question = '\nНамекнуть какое задание будет завтра?'
-                tts += tomorrow_question
-                self.state.action = 'tomorrow'
-            return ActionResponse(tts=tts)
+                if task_tomorrow and task_tomorrow.text_yesterday:
+                    tomorrow_question = '\nНамекнуть какое задание будет завтра?'
+                    tts += tomorrow_question
+                    self.state.action = 'tomorrow'
+                return ActionResponse(tts=tts)
+            else:
+                return ActionResponse('Задание на сегодня не найдено')  # Такого не должно быть, т.к првоерка is_active
         else:
-            return ActionResponse('Задание на сегодня не найдено')  # todo  расскзать почему именно (рано поздно?)
+            return self.not_active_response()
 
 
 class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
@@ -97,13 +132,26 @@ class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
             return ActionResponse(tts='Здравствуйте! До Нового года осталось совсем немного, '
                                       'я хочу украсить ваше ожидание ^этого^ чудесного праздника! '
                                       'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
-                                      'Я помогу вам готовиться к праздникам, давая приятное и интересное задания! '
+                                      'Я помогу вам готовиться к праздникам, давая приятное и интересное задание! '
                                       'Каждый день — ^новое^!\n' + age_question)
         else:
-            self.state.end_session = True
-            return ActionResponse(tts='Здравствуйте! '
-                                      'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
-                                      'И начинается он 1 декабря! Приходите, и я вам всё расскажу.')
+            return self.not_active_response()
+            # if self.days_before_new_year < 60:
+            #     text = 'Мы напишем письмо деду морозу, ' \
+            #            'посмотрим новогодние фильмы и мульфильмы, ' \
+            #            'сделаем что-то красивое своими руками и выполним ещё много интересных заданий. ' \
+            #            'Приходите 1 декабря, я буду Вас ждать.'
+            # elif self.days_before_new_year > 350:
+            #     text = 'Поздравляю вас с наступившим новым годом! ' \
+            #            'Надеюсь, вам понравились мои задания. ' \
+            #            'Приходите на следующий год.'
+            # else:
+            #     text = 'До нового года ещё далеко, я буду вас ждать 1 декабря.'
+            #
+            # self.state.end_session = True
+            # return ActionResponse(tts='Здравствуйте! '
+            #                           'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
+            #                           'И начинается он 1 декабря! {}'.format(text))
 
 
 class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
@@ -142,8 +190,6 @@ class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
         self.state.action = 'today'
         self.state.end_session = True
 
-        print('user_state', self.user_state)
-
         if self.is_good:
             calendar = AdventCalendarTasks(self.user_state.age)
             task_tomorrow = calendar.get(self.tomorrow)
@@ -178,11 +224,12 @@ class AdventCalendarProcessor(object):
         return state
 
     def get_user_state(self, message: MRCMessageWrap):
+        print('message.state.user', message.state.user)
         if message.state.user:
             return ACUserState(
-                age=message.state.session.get('age'),
-                first_date=message.state.session.get('first_date'),
-                last_date=message.state.session.get('last_date'),
+                age=message.state.user.get('age'),
+                first_date=message.state.user.get('first_date'),
+                last_date=message.state.user.get('last_date'),
             )
         else:
             return ACUserState()
@@ -199,6 +246,7 @@ class AdventCalendarProcessor(object):
 
         state = self.get_state(message)
         user_state = self.get_user_state(message)
+        print('user_state', user_state.serialize())
         handler_class = AdventCalendarMRCHandler.get_handler(handler_name=state.action)
         handler = handler_class(message=message, state=state, user_state=user_state)
         mrc_response = handler.process()
