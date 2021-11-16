@@ -165,7 +165,6 @@ class MRCResponse(object):
             data['session_state'] = self.session_state.serialize()
         if self.user_state_update:
             data['user_state_update'] = self.user_state_update.serialize()
-            print(data['user_state_update'])
         return data
 
 

@@ -1,6 +1,10 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
+import re
 from typing import AnyStr
+
+from django.utils.functional import classproperty
+from core.utils.misc import SafeContext
 
 
 def tts_to_text(tts: AnyStr) -> AnyStr :
@@ -52,3 +56,125 @@ def get_score_text(score_count):
         last_digit = int(str(score_count)[-1])
         text = check(last_digit)
     return text
+
+
+def audio(audio=None, audio_vk_id=None):
+    """ Получить код аудио дял вствки в tts """
+    if audio:
+        return '<speaker audio={}>'.format(audio)
+    if audio_vk_id:
+        return '<speaker audio_vk_id={}>'.format(audio_vk_id)
+
+
+class AgeDetector:
+    """ Определятель ВОЗРАСТА!!!  цифр (от 0 до 99) в строке """
+    D0 = 'нол'
+    D1 = 'один'
+    D2 = 'два'
+    D3 = 'три'
+    D4 = 'четыр'
+    D5 = 'пят'
+    D6 = 'шест'
+    D7 = 'сем'
+    D8 = 'восем'
+    D9 = 'девят'
+    D10 = 'десят'
+
+    D11 = 'одиннадцат'
+    D12 = 'двенадцат'
+    D13 = 'тринадцат'
+    D14 = 'четырнадцат'
+    D15 = 'пятнадцат'
+    D16 = 'шестнадцат'
+    D17 = 'семнадцат'
+    D18 = 'восемнадцат'
+    D19 = 'девятнадцат'
+
+    D20 = 'двадцат'
+    D30 = 'тридцат'
+    D40 = 'сорок'
+    D50 = 'пятьдесят'
+    D60 = 'шестдесят'
+    D70 = 'семдесят'
+    D80 = 'восемдесят'
+    D90 = 'девяносто'
+
+    MOD1 = [D11, D12, D13, D14, D15, D16, D17, D18, D19]
+    MOD10 = [D20, D30, D40, D50, D60, D70, D80, D90]
+
+    MAP = {
+        D0: 0,
+        D1: 1,
+        D2: 2,
+        D3: 3,
+        D4: 4,
+        D5: 5,
+        D6: 6,
+        D7: 7,
+        D8: 8,
+        D9: 9,
+        D10: 10,
+
+        D11: 11,
+        D12: 12,
+        D13: 13,
+        D14: 14,
+        D15: 15,
+        D16: 16,
+        D17: 17,
+        D18: 18,
+        D19: 19,
+
+        D20: 20,
+        D30: 30,
+        D40: 40,
+        D50: 50,
+        D60: 60,
+        D70: 70,
+        D80: 80,
+        D90: 90,
+    }
+
+    @classproperty
+    def mod1_values(cls):
+        return [cls.MAP[x] for x in cls.MOD1]
+
+    @classproperty
+    def mod10_values(cls):
+        return [cls.MAP[x] for x in cls.MOD10]
+
+    @classmethod
+    def detect(cls, text):
+        # type: (AnyStr) -> int
+        digits = []
+
+        # Собираем все совпадения по цифрам
+        for key, value in cls.MAP.items():  # Ходим по каждой цифре от 0 до 9
+            matches = [SafeContext(value=value, index=item.start()) for item in re.finditer(key, text)]
+            digits.extend(matches)
+
+        mod1_in_digits = any(filter(lambda x: x.value in cls.mod1_values, digits))
+        mod10_in_digits = any(filter(lambda x: x.value in cls.mod10_values, digits))
+
+        # исклчюаем из matches такие случаи как:
+        # тринадцать = [3, 13]
+        # шестдесят = [10, 60]
+        # восемь = [7, 8]
+        def filter_fn(x):
+            if mod1_in_digits:
+                return x.value in cls.mod1_values
+            if mod10_in_digits:
+                return x.value != cls.MAP[cls.D10] and (
+                        (x.value in cls.mod10_values) or
+                        (x.value not in cls.mod1_values and x.value not in cls.mod10_values and x.index > 0)
+                )
+
+            return x.index == 0
+
+        result_digits = list(filter(filter_fn, digits))
+
+        if len(result_digits) == 1:
+            return result_digits[0].value
+
+        if len(result_digits) > 1:
+            return sum(map(lambda x: x.value, result_digits))
