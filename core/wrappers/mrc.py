@@ -96,7 +96,7 @@ class RequestWrap(object):
         self.original_utterance = request['original_utterance']
         self.type = request['type']
         self.payload = request.get('payload')
-        self.nlu = request['nlu']
+        self.nlu = request.get('nlu', [])
 
 
 class StateWrap(object):
