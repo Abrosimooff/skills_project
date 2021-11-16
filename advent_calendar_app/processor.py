@@ -1,10 +1,13 @@
 import datetime
+import random
 
 import pytz
 from django.utils.functional import cached_property
 
+from advent_calendar_app.audio import AdventCalendarAudio
+from advent_calendar_app.consts import TOMORROW_PHRASES, TOMORROW_ANSWERS
 from advent_calendar_app.logic import AdventCalendarTasks
-from core.utils.base import clean_text
+from core.utils.base import clean_text, AgeDetector
 from core.utils.const import MRC_EXIT_COMMAND
 from core.utils.handlers import MRCHandler
 from core.wrappers.mrc import MRCResponseDict, MRCMessageWrap, MRCResponse, ActionResponse
@@ -13,12 +16,14 @@ from core.wrappers.state import BaseUserState, BaseState
 
 class ACState(BaseState):
 
-    def __init__(self, action) -> None:
+    def __init__(self, action, age: int = None) -> None:
         self.action = action or 'start'
+        self.age = age
 
     def serialize(self):
         return dict(
-            action=self.action
+            action=self.action,
+            age=self.age,
         )
 
 
@@ -34,8 +39,8 @@ class ACUserState(BaseUserState):
     def serialize(self):
         return dict(
             age=self.age,
-            first_date=self.first_date,
-            last_date=self.last_date
+            # first_date=self.first_date,
+            # last_date=self.last_date
         )
 
 
@@ -72,6 +77,11 @@ class AdventCalendarMRCHandler(MRCHandler):
         """ Активен ли сейчас календарь ? работает с 1 декабря до 31 декабря """
         return self.days_before_new_year <= 31
 
+    @property
+    def age(self):
+        """ Получить возраст из одного из стейтов """
+        return self.user_state.age or self.state.age
+
     def not_active_response(self):
         """ Когда сегодня не декабрь """
 
@@ -102,20 +112,21 @@ class AdventCalendarMRCHandler(MRCHandler):
 
     def today_response(self, welcome=False):
         if self.is_active:
-            calendar = AdventCalendarTasks(self.user_state.age)
+            calendar = AdventCalendarTasks(self.age)
             task = calendar.get(self.today)
             task_tomorrow = calendar.get(self.tomorrow)
 
             if task:
-                tts = 'Вот ваше задание на сегодня. {}. '.format(task.text)
+                audio = AdventCalendarAudio.get_random()
+                tts = '{} Вот ваше задание на сегодня. {}. '.format(audio, task.text)
                 if welcome:
                     tts = 'Желаю Вам приятного ожидания Нового года! ' + tts
 
                 if task_tomorrow and task_tomorrow.text_yesterday:
-                    tomorrow_question = '\nНамекнуть какое задание будет завтра?'
+                    tomorrow_question = '\n' + random.choice(TOMORROW_PHRASES)
                     tts += tomorrow_question
                     self.state.action = 'tomorrow'
-                return ActionResponse(tts=tts)
+                return ActionResponse(tts=tts, card=task.card)
             else:
                 return ActionResponse('Задание на сегодня не найдено')  # Такого не должно быть, т.к првоерка is_active
         else:
@@ -127,31 +138,18 @@ class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
 
     def action(self, **kwargs):
         if self.is_active:
-            age_question = 'Чтобы я подобрала для вас по настоящему интересные задания, скажите сколько вам лет?'
-            self.state.action = 'age'
-            return ActionResponse(tts='Здравствуйте! До Нового года осталось совсем немного, '
-                                      'я хочу украсить ваше ожидание ^этого^ чудесного праздника! '
-                                      'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
-                                      'Я помогу вам готовиться к праздникам, давая приятное и интересное задание! '
-                                      'Каждый день — ^новое^!\n' + age_question)
+            if self.user_state.age:
+                return self.today_response()
+            else:
+                age_question = 'Чтобы я подобрала для вас по настоящему интересные задания, скажите сколько вам лет?'
+                self.state.action = 'age'
+                return ActionResponse(tts='Здравствуйте! До Нового года осталось совсем немного, '
+                                          'я хочу украсить ваше ожидание ^этого^ чудесного праздника! '
+                                          'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
+                                          'Я помогу вам готовиться к праздникам, давая приятное и интересное задание! '
+                                          'Каждый день — ^новое^!\n' + age_question)
         else:
             return self.not_active_response()
-            # if self.days_before_new_year < 60:
-            #     text = 'Мы напишем письмо деду морозу, ' \
-            #            'посмотрим новогодние фильмы и мульфильмы, ' \
-            #            'сделаем что-то красивое своими руками и выполним ещё много интересных заданий. ' \
-            #            'Приходите 1 декабря, я буду Вас ждать.'
-            # elif self.days_before_new_year > 350:
-            #     text = 'Поздравляю вас с наступившим новым годом! ' \
-            #            'Надеюсь, вам понравились мои задания. ' \
-            #            'Приходите на следующий год.'
-            # else:
-            #     text = 'До нового года ещё далеко, я буду вас ждать 1 декабря.'
-            #
-            # self.state.end_session = True
-            # return ActionResponse(tts='Здравствуйте! '
-            #                           'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
-            #                           'И начинается он 1 декабря! {}'.format(text))
 
 
 class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
@@ -159,8 +157,9 @@ class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
 
     def detect_age(self):
         """ Определить возвраст """
-        age = 9
-        self.user_state.age = age
+        age = AgeDetector.detect(self.message.request.command)
+        if age:
+            self.user_state.age = age
         return age
 
     def action(self, **kwargs):
@@ -181,7 +180,7 @@ class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
         if clean_text('не') in user_text:
             return False
 
-        for item in ['да', 'намекн', 'расска']:
+        for item in TOMORROW_ANSWERS:
             if clean_text(item) in user_text:
                 return True
         return False
@@ -191,10 +190,12 @@ class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
         self.state.end_session = True
 
         if self.is_good:
-            calendar = AdventCalendarTasks(self.user_state.age)
+            age = self.user_state.age or self.state.age
+            calendar = AdventCalendarTasks(age)
             task_tomorrow = calendar.get(self.tomorrow)
             if task_tomorrow and task_tomorrow.text_yesterday:
-                return ActionResponse(tts=task_tomorrow.text_yesterday)
+                audio = AdventCalendarAudio.get_random()
+                return ActionResponse(tts=audio + task_tomorrow.text_yesterday)
         else:
             return ActionResponse(tts='Поняла. Выполняйте текущее задание. '
                                       'Не буду забивать вам голову заданиями из будущего.')
@@ -217,6 +218,7 @@ class AdventCalendarProcessor(object):
         if message.state.session:
             state = ACState(
                 action=message.state.session.get('action'),
+                age=message.state.session.get('age')
             )
         else:
             state = ACState(action='start')
@@ -224,12 +226,11 @@ class AdventCalendarProcessor(object):
         return state
 
     def get_user_state(self, message: MRCMessageWrap):
-        print('message.state.user', message.state.user)
         if message.state.user:
             return ACUserState(
                 age=message.state.user.get('age'),
-                first_date=message.state.user.get('first_date'),
-                last_date=message.state.user.get('last_date'),
+                # first_date=message.state.user.get('first_date'),
+                # last_date=message.state.user.get('last_date'),
             )
         else:
             return ACUserState()
@@ -246,7 +247,6 @@ class AdventCalendarProcessor(object):
 
         state = self.get_state(message)
         user_state = self.get_user_state(message)
-        print('user_state', user_state.serialize())
         handler_class = AdventCalendarMRCHandler.get_handler(handler_name=state.action)
         handler = handler_class(message=message, state=state, user_state=user_state)
         mrc_response = handler.process()

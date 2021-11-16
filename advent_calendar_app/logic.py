@@ -15,7 +15,7 @@ class AdventCalendarTasks:
     @cached_property
     def tasks(self) -> Dict:
         """ Список всех заданий для выбранного возраста """
-        if self.age < 18:
+        if self.age < 14:
             return TASKS_KIDS
         return TASKS_OLDS
 
