@@ -58,6 +58,7 @@ class AdventCalendarMRCHandler(MRCHandler):
         """ Сегодняшняя дата ПОЛЬЗОВАТЕЛЯ """
 
         # day = random.randint(1, 31)
+        # day = 1
         # return datetime.date(2021, 12, day)  # todo test
 
         user_timezone = pytz.timezone(self.message.meta.timezone)
@@ -126,6 +127,7 @@ class AdventCalendarMRCHandler(MRCHandler):
             task_tomorrow = calendar.get(self.tomorrow)
 
             if task:
+                self.state.action = 'today'
                 audio = AdventCalendarAudio.get_random()
                 tts = '{}Вот ваше задание на сегодня. {}. '.format(audio, task.text)
                 if welcome:
@@ -216,7 +218,7 @@ class AdventCalendarTodayMRCHandler(AdventCalendarMRCHandler):
     name = 'today'
 
     def action(self, **kwargs):
-        return self.today_response(welcome=True)
+        return self.today_response(welcome=False)
 
 
 class AdventCalendarProcessor(object):
