@@ -114,7 +114,8 @@ class AdventCalendarMRCHandler(MRCHandler):
         self.state.end_session = True
         start_text = 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
                      'И начинается он 1 декабря! {}'.format(text)
-        start_tts = 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
+        audio = AdventCalendarAudio.get_random()
+        start_tts = audio + 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
                     'И начинается он первого декабря! {}'.format(tts)
         return ActionResponse(text=start_text, tts=start_tts)
 
