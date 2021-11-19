@@ -144,8 +144,14 @@ class AgeDetector:
         return [cls.MAP[x] for x in cls.MOD10]
 
     @classmethod
-    def detect(cls, text):
-        # type: (AnyStr) -> int
+    def detect(cls, text: AnyStr) -> int:
+
+        # Если в текте прям ЦИФРЫ - то по ним определяем
+        digit_list = re.findall('\d+', text)
+        if digit_list and int(digit_list[0]) < 100:
+            return int(digit_list[0])
+
+        # Иначе по текстовым числительным
         digits = []
 
         # Собираем все совпадения по цифрам

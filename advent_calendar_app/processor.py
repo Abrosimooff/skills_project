@@ -5,7 +5,7 @@ import pytz
 from django.utils.functional import cached_property
 
 from advent_calendar_app.audio import AdventCalendarAudio
-from advent_calendar_app.consts import TOMORROW_PHRASES, TOMORROW_ANSWERS
+from advent_calendar_app.consts import TOMORROW_PHRASES, TOMORROW_ANSWERS, NOT_TOMORROW_PHRASES
 from advent_calendar_app.logic import AdventCalendarTasks
 from core.utils.base import clean_text, AgeDetector
 from core.utils.const import MRC_EXIT_COMMAND
@@ -43,6 +43,12 @@ class ACUserState(BaseUserState):
             # last_date=self.last_date
         )
 
+#   todo  Осталось:
+#   todo  1. Добавить звуков
+#   todo  2. Доабвить Задания для взрослых
+#   todo  3. Проверить все задания и ссылки
+#   todo  4. Проверить авторизованных /не авторизованных
+
 
 class AdventCalendarMRCHandler(MRCHandler):
     """ Базовый хэндлер скилла красочки """
@@ -50,7 +56,9 @@ class AdventCalendarMRCHandler(MRCHandler):
     @cached_property
     def today(self) -> datetime.date:
         """ Сегодняшняя дата ПОЛЬЗОВАТЕЛЯ """
-        return datetime.date(2021, 12, 1)  # todo test
+
+        # day = random.randint(1, 31)
+        # return datetime.date(2021, 12, day)  # todo test
 
         user_timezone = pytz.timezone(self.message.meta.timezone)
         user_now = datetime.datetime.now(user_timezone)                          # Текущее Время пользователя
@@ -86,11 +94,11 @@ class AdventCalendarMRCHandler(MRCHandler):
         """ Когда сегодня не декабрь """
 
         if self.days_before_new_year <= 60:
-            text = 'Мы напишем письмо деду морозу, ' \
+            text = 'Мы напишем письмо Деду Морозу, ' \
                    'посмотрим новогодние фильмы и мультфильмы, ' \
                    'сделаем что-то красивое своими руками и выполним ещё много интересных заданий. ' \
                    'Приходите 1 декабря, я буду Вас ждать.'
-            tts = 'Мы напишем письмо деду ^морозу^! ' \
+            tts = 'Мы напишем письмо Деду ^Морозу^! ' \
                    'Посмотрим новогодние фильмы и мультфильмы! ' \
                    'Сделаем что-то красивое своими руками и выполним ещё много интересных заданий! ' \
                    'Приходите первого декабря, я буду Вас ждать.'
@@ -118,7 +126,7 @@ class AdventCalendarMRCHandler(MRCHandler):
 
             if task:
                 audio = AdventCalendarAudio.get_random()
-                tts = '{} Вот ваше задание на сегодня. {}. '.format(audio, task.text)
+                tts = '{}Вот ваше задание на сегодня. {}. '.format(audio, task.text)
                 if welcome:
                     tts = 'Желаю Вам приятного ожидания Нового года! ' + tts
 
@@ -160,6 +168,7 @@ class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
         age = AgeDetector.detect(self.message.request.command)
         if age:
             self.user_state.age = age
+            self.state.age = age
         return age
 
     def action(self, **kwargs):
@@ -167,7 +176,7 @@ class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
         if age:
             return self.today_response(welcome=True)
         else:
-            ActionResponse('Я не расслышала. повторите ещё раз. Сколько вам лет?')
+            return ActionResponse('Я не расслышала. повторите ещё раз. Сколько вам лет?')
 
 
 class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
@@ -193,12 +202,13 @@ class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
             age = self.user_state.age or self.state.age
             calendar = AdventCalendarTasks(age)
             task_tomorrow = calendar.get(self.tomorrow)
+            audio = AdventCalendarAudio.get_random()
             if task_tomorrow and task_tomorrow.text_yesterday:
-                audio = AdventCalendarAudio.get_random()
                 return ActionResponse(tts=audio + task_tomorrow.text_yesterday)
+            return ActionResponse(tts=audio + 'Завтра ждёт очередное интересное задание.')
         else:
-            return ActionResponse(tts='Поняла. Выполняйте текущее задание. '
-                                      'Не буду забивать вам голову заданиями из будущего.')
+            not_tomorrow_phrase = random.choice(NOT_TOMORROW_PHRASES)  # До завтра
+            return ActionResponse(tts=not_tomorrow_phrase)
 
 
 class AdventCalendarTodayMRCHandler(AdventCalendarMRCHandler):
