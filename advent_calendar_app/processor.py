@@ -2,17 +2,19 @@ import datetime
 import random
 
 import pytz
+from django.urls import reverse
 from django.utils.functional import cached_property
 
 from advent_calendar_app.audio import AdventCalendarAudio
 from advent_calendar_app.consts import TOMORROW_PHRASES, TOMORROW_ANSWERS, NOT_TOMORROW_PHRASES, TOMORROW_BTN_TEXT, \
-    CHANGE_AGE_BTN_TEXT, CHANGE_AGE_PHRASES
+    CHANGE_AGE_BTN_TEXT, CHANGE_AGE_PHRASES, IMAGE_ID
 from advent_calendar_app.logic import AdventCalendarTasks
 from core.utils.base import clean_text, AgeDetector
 from core.utils.const import MRC_EXIT_COMMAND
 from core.utils.handlers import MRCHandler
-from core.wrappers.mrc import MRCResponseDict, MRCMessageWrap, MRCResponse, ActionResponse, Button, Push
+from core.wrappers.mrc import MRCResponseDict, MRCMessageWrap, MRCResponse, ActionResponse, Button, Push, CardLink
 from core.wrappers.state import BaseUserState, BaseState
+from skills.settings import PRODUCTION_HOSTNAME
 
 
 class ACState(BaseState):
@@ -45,8 +47,6 @@ class ACUserState(BaseUserState):
         )
 
 #   todo  Осталось:
-#   todo  1. Добавить звуков
-#   todo  2. Доабвить Задания для взрослых
 #   todo  3. Проверить все задания и ссылки
 #   todo  4. Проверить авторизованных /не авторизованных
 
@@ -122,6 +122,18 @@ class AdventCalendarMRCHandler(MRCHandler):
         user_text = clean_text(self.message.request.command)
         return 'задание на телефон' in user_text
 
+    def get_today_card(self):
+        from hashids import Hashids
+        hashids = Hashids()
+        slug = hashids.encode(self.age, self.today.day)
+        url = PRODUCTION_HOSTNAME + reverse('mrc-skills-advent-calendar-day', kwargs=dict(slug=slug))
+        return CardLink(
+            url=url,
+            text='{} декабря'.format(self.today.day),
+            title='Ваше задание на сегодня',
+            image_id=IMAGE_ID
+        )
+
     def not_active_response(self):
         """ Когда сегодня не декабрь """
 
@@ -188,7 +200,8 @@ class AdventCalendarMRCHandler(MRCHandler):
                 push = None
                 if task.card and self.message.session.application.is_speaker:
                     push = Push('Посмотрите ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
-                return ActionResponse(tts=tts, card=task.card, buttons=buttons, push=push)
+                # return ActionResponse(tts=tts, card=task.card, buttons=buttons, push=push)
+                return ActionResponse(tts=tts, card=self.get_today_card(), buttons=buttons, push=push)
             else:
                 self.state.end_session = True
                 tts += 'Задание на сегодня не найдено.'
@@ -214,7 +227,8 @@ class AdventCalendarOpenPushMRCHandler(AdventCalendarMRCHandler):
             if task:
                 self.state.action = 'today'
                 tts = 'Вот ваше задание на сегодня.\n{}. '.format(task.text)
-                return ActionResponse(tts=tts, card=task.card)
+
+                return ActionResponse(tts=tts, card=self.get_today_card())
 
         tts = 'Задание на сегодня не найдено.'
         return ActionResponse(tts)  # Такого не должно быть, т.к првоерка is_active

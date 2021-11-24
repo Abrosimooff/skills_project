@@ -1,0 +1,65 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        body{
+            width: 100%;
+            height: 100%;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-image: url("{% static 'img/christmas_1920.jpg' %}");
+            font-family: 'Balsamiq Sans', cursive;
+        }
+        .title{ color: #fd3232 }
+        .help{ color: #7c7c7c
+        }
+        .title-white{ color: #fff }
+        .help-white{ color: #dadada}
+
+
+    </style>
+    <title>Ваше задание на сегодня</title>
+  </head>
+  <body>
+
+      <div class="container" style="text-align: center; margin-top: 100px">
+        <div style="background: rgba(255,255,255,0.9); box-shadow: 0px 0px 15px #888888; position: relative;
+            padding: 30px; border-radius: 20px; ">
+            <h1 style="font-size: 20px; color: #2a2a2a; position: absolute; right: 15px; top: 15px" class="title">{{ day }} декабря</h1>
+            <h1 style="font-size: 50px; margin-top: 30px" class="title">Задание</h1>
+            <h1 style="background: #fd3232; border-radius: 100%; display: block;
+            width: 70px; height: 70px; line-height: 70px; margin: 30px auto; color: #fff;">{{ day }}</h1>
+            <h3 style="color: #2a2a2a; line-height: 1.5em">{{ task.text }}</h3>
+        </div>
+
+        {% if task.card %}
+            <div style="background: rgba(255,255,255,0.9); margin-top: 50px; box-shadow: 0px 0px 15px #888888; position: relative;
+            padding: 30px; border-radius: 20px; ">
+                <h1 style="font-size: 20px; color: #2a2a2a; position: absolute; right: 15px; top: 15px" class="title">Приложение</h1>
+                <h1 style="font-size: 30px; margin-top: 30px" class="title">{{ task.card.title }}</h1>
+                <h3 style="color: #2a2a2a; line-height: 1.5em; font-size: 18px">{{ task.card.text }}</h3>
+                {% if task.card.embed_url %}
+                <iframe width="auto" height="315" src="{{ task.card.embed_url }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                {% else %}
+                    <a target="_blank" href="{{ task.card.url }}">Ссылка на ресурс</a>
+                {% endif %}
+                </div>
+        {% endif %}
+      </div>
+
+
+
+  </body>
+</html>

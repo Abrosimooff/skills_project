@@ -50,6 +50,14 @@ class CardLink(Card):
         self.text = text
         self.image_id = image_id
 
+    @cached_property
+    def embed_url(self):
+        """ Встраиваемый url """
+        index = self.url.find('watch?v=')
+        if index >= 0:
+            embed_part = self.url[index + 8:]
+            return "https://www.youtube.com/embed/{}".format(embed_part)
+
     def serialize(self):
         return dict(
             type=self.type,

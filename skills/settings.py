@@ -27,7 +27,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['https://skill-debugger.marusia.mail.ru', '127.0.0.1', 'localhost', 'skills.na4u.ru']
 
-PRODUCTION_HOSTNAME = 'https://skills.na4u.ru/'
+PRODUCTION_HOSTNAME = 'https://skills.na4u.ru'
 
 # try:
 #     import socket

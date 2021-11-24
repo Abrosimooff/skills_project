@@ -23,3 +23,8 @@ class AdventCalendarTasks:
         key = (current_date.month, current_date.day)
         task = self.tasks.get(key)
         return task
+
+    def get_by_day(self, day):
+        key = (12, day)
+        task = self.tasks.get(key)
+        return task
