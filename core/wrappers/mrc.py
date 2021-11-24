@@ -2,6 +2,8 @@ from __future__ import unicode_literals, absolute_import, division, print_functi
 
 from typing import AnyStr, List, Dict
 
+from django.utils.functional import cached_property
+
 from core.utils.base import tts_to_text
 from core.wrappers.state import BaseUserState
 
@@ -58,6 +60,21 @@ class CardLink(Card):
         )
 
 
+class Push:
+    text: AnyStr
+    payload: None
+
+    def __init__(self, text: AnyStr, payload: Dict = None) -> None:
+        self.text = text
+        self.payload = payload
+
+    def serialize(self):
+        data = dict(push_text=self.text)
+        if self.payload:
+            data['payload'] = self.payload
+        return data
+
+
 class MetaWrap(object):
 
     def __init__(self, meta) -> None:
@@ -65,6 +82,32 @@ class MetaWrap(object):
         self.timezone = meta['timezone']
         self.interfaces = meta['interfaces']
         self._city_ru = meta.get('_city_ru')
+
+
+class SessionApplication:
+    """ Тип приложения из которого идёт запрос """
+    application_id: AnyStr
+    application_type: AnyStr
+
+    def __init__(self, data: Dict) -> None:
+        self.application_id = data.get('application_id') if data else None
+        self.application_type = data.get('application_type') if data else None
+
+    @cached_property
+    def is_mobile(self):
+        return self.application_type and self.application_type.lower() == 'mobile'
+
+    @cached_property
+    def is_speaker(self):
+        return self.application_type and self.application_type.lower() == 'speaker'
+
+    @cached_property
+    def is_vk(self):
+        return self.application_type and self.application_type.lower() == 'vk'
+
+    @cached_property
+    def is_other(self):
+        return self.application_type and self.application_type.lower() == 'other'
 
 
 class SessionWrap(object):
@@ -76,7 +119,7 @@ class SessionWrap(object):
         self.new = session['new']
         self.message_id = session['message_id']
         self.user = session.get('user')
-        self.application = session['application']
+        self.application = SessionApplication(session['application'])
         self.auth_token = session['auth_token']
 
     def serialize(self):
@@ -89,13 +132,34 @@ class SessionWrap(object):
         )
 
 
+class RequestType:
+
+    def __init__(self, kind: AnyStr):
+        self.kind = kind
+
+    @cached_property
+    def is_utterance(self):
+        """ Голосовой ввод """
+        return self.kind == 'SimpleUtterance'
+
+    @cached_property
+    def is_button_pressed(self):
+        """ Нажата кнопка """
+        return self.kind == 'ButtonPressed'
+
+    @cached_property
+    def is_deeplink(self):
+        """ Голосовой ввод """
+        return self.kind == 'DeepLink'
+
+
 class RequestWrap(object):
 
     def __init__(self, request) -> None:
         self.command = request['command']
         self.original_utterance = request['original_utterance']
-        self.type = request['type']
-        self.payload = request.get('payload')
+        self.type = RequestType(request['type'])
+        self.payload = request.get('payload', {})
         self.nlu = request.get('nlu', [])
 
 
@@ -122,12 +186,13 @@ class MRCMessageWrap(object):
 
 class MRCResponseDict(object):
 
-    def __init__(self, text, end_session, tts=None, buttons: List[Button] = None, card: Card = None) -> None:
+    def __init__(self, text, end_session, tts=None, buttons: List[Button] = None, card: Card = None, push: Push = None) -> None:
         self.text = text
         self.end_session = end_session
         self.tts = tts
         self.buttons = buttons or []
         self.card = card
+        self.push = push
 
     def serialize(self):
         response = dict(
@@ -140,6 +205,8 @@ class MRCResponseDict(object):
             response['buttons'] = [b.serialize() for b in self.buttons]
         if self.card:
             response['card'] = self.card.serialize()
+        if self.push:
+            response['push'] = self.push.serialize()
 
         return response
 
@@ -174,9 +241,16 @@ class ActionResponse(object):
     tts: AnyStr
     buttons: List
     card: Card
+    push: Push
 
-    def __init__(self, text: AnyStr = None, tts: AnyStr = None, buttons: List[Button] = None, card: Card = None) -> None:
+    def __init__(self,
+                 text: AnyStr = None,
+                 tts: AnyStr = None,
+                 buttons: List[Button] = None,
+                 card: Card = None,
+                 push: Push = None) -> None:
         self.text = tts_to_text(text or tts)
         self.tts = tts
         self.buttons = buttons or []
         self.card = card
+        self.push = push

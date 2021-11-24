@@ -41,6 +41,7 @@ class MRCHandler(object):
                 tts=action_response.tts,
                 buttons=action_response.buttons,
                 card=action_response.card,
+                push=action_response.push
             ),
             session=self.message.session,
             version=self.message.version,

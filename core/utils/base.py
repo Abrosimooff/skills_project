@@ -146,6 +146,8 @@ class AgeDetector:
     @classmethod
     def detect(cls, text: AnyStr) -> int:
 
+        text = clean_text(text)
+
         # Если в текте прям ЦИФРЫ - то по ним определяем
         digit_list = re.findall('\d+', text)
         if digit_list and int(digit_list[0]) < 100:
@@ -159,21 +161,38 @@ class AgeDetector:
             matches = [SafeContext(value=value, index=item.start()) for item in re.finditer(key, text)]
             digits.extend(matches)
 
-        mod1_in_digits = any(filter(lambda x: x.value in cls.mod1_values, digits))
-        mod10_in_digits = any(filter(lambda x: x.value in cls.mod10_values, digits))
+        mod1_in_digits = any(filter(lambda x: x.value in cls.mod1_values, digits))  # в списке есть 11 - 19
+        mod10_in_digits = any(filter(lambda x: x.value in cls.mod10_values, digits))  # в списке есть 20, 30, 40...90
+        exists8 = any(filter(lambda x: x.value == 8, digits))
+        exists18 = any(filter(lambda x: x.value == 18, digits))
+        exists80 = any(filter(lambda x: x.value == 80, digits))
 
         # исклчюаем из matches такие случаи как:
         # тринадцать = [3, 13]
         # шестдесят = [10, 60]
         # восемь = [7, 8]
+        # восемнадцать = [7, 8]
         def filter_fn(x):
+            result = False
             if mod1_in_digits:
-                return x.value in cls.mod1_values
-            if mod10_in_digits:
-                return x.value != cls.MAP[cls.D10] and (
+                result = x.value in cls.mod1_values
+                if exists18:
+                    result = result and x.value != 17
+                return result
+
+            elif mod10_in_digits:
+                result = x.value != cls.MAP[cls.D10] and (
                         (x.value in cls.mod10_values) or
                         (x.value not in cls.mod1_values and x.value not in cls.mod10_values and x.index > 0)
                 )
+                if exists8:
+                    result = result and x.value != 7
+                if exists80:
+                    result = result and x.value != 70
+                return result
+
+            elif exists8:
+                return x.value != 7
 
             return x.index == 0
 
