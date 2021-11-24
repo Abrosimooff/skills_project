@@ -59,8 +59,8 @@ class AdventCalendarMRCHandler(MRCHandler):
         """ Сегодняшняя дата ПОЛЬЗОВАТЕЛЯ """
 
         # day = random.randint(1, 31)
-        day = 23
-        return datetime.date(2021, 12, day)  # todo test
+        # day = 23
+        # return datetime.date(2021, 12, day)  # todo test
 
         user_timezone = pytz.timezone(self.message.meta.timezone)
         user_now = datetime.datetime.now(user_timezone)                          # Текущее Время пользователя
@@ -226,8 +226,8 @@ class AdventCalendarOpenPushMRCHandler(AdventCalendarMRCHandler):
             self.state.end_session = True
             if task:
                 self.state.action = 'today'
-                tts = 'Вот ваше задание на сегодня.\n{}. '.format(task.text)
-
+                # tts = 'Вот ваше задание на сегодня.\n{}. '.format(task.text)
+                tts = ''
                 return ActionResponse(tts=tts, card=self.get_today_card())
 
         tts = 'Задание на сегодня не найдено.'
@@ -332,7 +332,7 @@ class AdventCalendarProcessor(object):
         else:
             return ACUserState()
 
-    def process(self, message: MRCMessageWrap) -> MRCResponse:
+    def process(self, message: MRCMessageWrap, hook_day: int = None) -> MRCResponse:
         # Если сигнал - что пользователь вышел из скилла
         if message.request.command == MRC_EXIT_COMMAND:
             _response_dict = self.do_exit()
@@ -354,5 +354,13 @@ class AdventCalendarProcessor(object):
 
         handler_class = AdventCalendarMRCHandler.get_handler(handler_name=action)
         handler = handler_class(message=message, state=state, user_state=user_state)
+
+        # Хук для тестирования дат
+        try:
+            if hook_day and 1 <= int(hook_day) <= 31:
+                handler.today = datetime.date(2021, 12, int(hook_day))
+                print('USED HOOK DAY', hook_day)
+        except:
+            pass
         mrc_response = handler.process()
         return mrc_response

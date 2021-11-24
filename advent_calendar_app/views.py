@@ -20,7 +20,7 @@ class MRCSkillAdventCalendarView(MRCView):
         request_message = json.loads(request.body)
         message = MRCMessageWrap(request_message)
         processor = AdventCalendarProcessor()
-        response = processor.process(message)
+        response = processor.process(message, hook_day=self.request.GET.get('hook_day'))
         return JsonResponse(response.serialize())
 
 
