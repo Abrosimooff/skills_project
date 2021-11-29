@@ -7,7 +7,7 @@ from django.utils.functional import cached_property
 
 from advent_calendar_app.audio import AdventCalendarAudio
 from advent_calendar_app.consts import TOMORROW_PHRASES, TOMORROW_ANSWERS, NOT_TOMORROW_PHRASES, TOMORROW_BTN_TEXT, \
-    CHANGE_AGE_BTN_TEXT, CHANGE_AGE_PHRASES, IMAGE_ID
+    CHANGE_AGE_BTN_TEXT, CHANGE_AGE_PHRASES, IMAGE_ID, EMOJI
 from advent_calendar_app.logic import AdventCalendarTasks
 from core.utils.base import clean_text, AgeDetector
 from core.utils.const import MRC_EXIT_COMMAND
@@ -156,8 +156,8 @@ class AdventCalendarMRCHandler(MRCHandler):
             tts = 'До нового года ещё далеко, я буду вас ждать первого декабря.'
 
         self.state.end_session = True
-        start_text = 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
-                     'И начинается он 1 декабря! {}'.format(text)
+        start_text = 'Здравствуйте! {} Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
+                     'И начинается он 1 декабря! {}'.format(EMOJI.elka, text)
         audio = AdventCalendarAudio.get_random()
         start_tts = audio + 'Здравствуйте! Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
                     'И начинается он первого декабря! {}'.format(tts)
@@ -170,12 +170,12 @@ class AdventCalendarMRCHandler(MRCHandler):
 
         if welcome:
             if self.message.session.user:
-                tts += '{}{}! Я запомнила ваш возраст. ' \
+                tts += '{}{}! Я запомнила ваш возраст {}. ' \
                       'Чтобы получать задания для другого возраста - всегда можете сказать мне: «Изменить возраст».\n' \
-                      'Желаю Вам приятного ожидания Нового года!\n'.format(audio, self.age)
+                      'Желаю Вам приятного ожидания Нового года!\n\n'.format(audio, self.age, EMOJI.smile)
             else:
-                tts += '{}{}! Я поняла ваш возраст, но чтобы я запомнила его - Вам нужно авторизоваться.\n'\
-                    .format(audio, self.age)
+                tts += '{}{}! Я поняла ваш возраст, но чтобы я запомнила его - Вам нужно авторизоваться {}.\n\n'\
+                    .format(audio, self.age, EMOJI.smile)
 
         if self.is_active:
             calendar = AdventCalendarTasks(self.age)
@@ -185,10 +185,17 @@ class AdventCalendarMRCHandler(MRCHandler):
             if task:
                 buttons = []
                 self.state.action = 'today'
-                tts += '{}Вот ваше задание на сегодня.\n{}. '.format(audio if not welcome else '', task.text)
+                tts += '{}Вот ваше задание на сегодня.\n{}'.format(audio if not welcome else '', task.text)
+                if tts[-1] != '.':
+                    tts += '. '
+                else:
+                    tts += ' '
+
+                if task.share:
+                    tts += '\n\n' + task.tag_text
 
                 if task_tomorrow and task_tomorrow.text_yesterday:
-                    tomorrow_question = '\n' + random.choice(TOMORROW_PHRASES)
+                    tomorrow_question = '\n\n' + random.choice(TOMORROW_PHRASES)
                     tts += tomorrow_question
                     self.state.action = 'tomorrow'
                     buttons.append(Button(title=TOMORROW_BTN_TEXT))
@@ -253,11 +260,11 @@ class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
             else:
                 age_question = 'Чтобы я подобрала для вас по настоящему интересные задания, скажите сколько вам лет?'
                 self.state.action = 'age'
-                return ActionResponse(tts='Здравствуйте! До Нового года осталось совсем немного, '
+                return ActionResponse(tts='Здравствуйте! {} До Нового года осталось совсем немного, '
                                           'я хочу украсить ваше ожидание ^этого^ чудесного праздника! '
                                           'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
                                           'Я помогу вам готовиться к праздникам, давая приятное и интересное задание! '
-                                          'Каждый день — ^новое^!\n' + age_question)
+                                          'Каждый день — ^новое^!\n'.format(EMOJI.elka) + age_question)
         else:
             return self.not_active_response()
 

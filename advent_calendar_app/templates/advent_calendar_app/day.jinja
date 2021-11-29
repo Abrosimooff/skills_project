@@ -41,7 +41,7 @@
             <h1 style="font-size: 50px; margin-top: 30px" class="title">Задание</h1>
             <h1 style="background: #fd3232; border-radius: 100%; display: block;
             width: 70px; height: 70px; line-height: 70px; margin: 30px auto; color: #fff;">{{ day }}</h1>
-            <h3 style="color: #2a2a2a; line-height: 1.5em">{{ task.text }}</h3>
+            <h3 style="color: #2a2a2a; line-height: 1.5em">{{ task.text | safe }}</h3>
         </div>
 
         {% if task.card %}
