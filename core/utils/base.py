@@ -10,8 +10,12 @@ from core.utils.misc import SafeContext
 def tts_to_text(tts: AnyStr) -> AnyStr :
     """ убираем `^ <speaker> из текста  """
     LETTERS = ('`', '^')
+
     SPEAKER_START = '<speaker'
     SPEAKER_END = '>'
+
+    EMOJI_START = '&#'
+    EMOJI_END = ';'
 
     text = tts
     for letter in LETTERS:
@@ -21,6 +25,12 @@ def tts_to_text(tts: AnyStr) -> AnyStr :
         start = text.index(SPEAKER_START)
         end = text.index(SPEAKER_END)
         text = text[:start] + text[end + 1:]
+
+    while EMOJI_START in text:
+        start = text.index(EMOJI_START)
+        end = text.index(EMOJI_END)
+        text = text[:start] + text[end + 1:]
+
     return text
 
 
