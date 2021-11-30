@@ -85,7 +85,7 @@ class AdventCalendarMRCHandler(MRCHandler):
     @cached_property
     def is_active(self):
         """ Активен ли сейчас календарь ? работает с 1 декабря до 31 декабря """
-        return self.days_before_new_year <= 31
+        return self.days_before_new_year <= 30
 
     @property
     def age(self):
