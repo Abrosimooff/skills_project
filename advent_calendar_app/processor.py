@@ -205,7 +205,7 @@ class AdventCalendarMRCHandler(MRCHandler):
 
                 # Если запрос колонки - то отпарвляем пуш с дневным заданием
                 push = None
-                if task.card and self.message.session.application.is_speaker:
+                if self.message.session.application.is_speaker:
                     push = Push('Посмотрите ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
                 # return ActionResponse(tts=tts, card=task.card, buttons=buttons, push=push)
                 return ActionResponse(tts=tts, card=self.get_today_card(), buttons=buttons, push=push)
