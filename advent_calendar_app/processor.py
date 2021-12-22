@@ -138,22 +138,22 @@ class AdventCalendarMRCHandler(MRCHandler):
         """ Когда сегодня не декабрь """
 
         if self.days_before_new_year <= 60:
-            text = 'Я подберу для вас задания по возрасту. Мы напишем письмо Деду Морозу, ' \
+            text = 'Я подберу для Вас задания по возрасту. Мы напишем письмо Деду Морозу, ' \
                    'посмотрим новогодние фильмы и мультфильмы, ' \
                    'сделаем что-то красивое своими руками и выполним ещё много интересных заданий. ' \
                    'Приходите 1 декабря, я буду Вас ждать.'
-            tts = 'Я подберу для вас задания по возрасту. Мы напишем письмо Деду ^Морозу^! ' \
+            tts = 'Я подберу для Вас задания по возрасту. Мы напишем письмо Деду ^Морозу^! ' \
                    'Посмотрим новогодние фильмы и мультфильмы! ' \
                    'Сделаем что-то красивое своими руками и выполним ещё много интересных заданий! ' \
                    'Приходите первого декабря, я буду Вас ждать.'
         elif self.days_before_new_year > 350:
-            text = 'Поздравляю вас с наступившим новым годом! ' \
-                   'Надеюсь, вам понравились мои задания. ' \
+            text = 'Поздравляю Вас с наступившим новым годом! ' \
+                   'Надеюсь, Вам понравились мои задания. ' \
                    'Приходите на следующий год.'
             tts = text
         else:
-            text = 'До нового года ещё далеко, я буду вас ждать 1 декабря.'
-            tts = 'До нового года ещё далеко, я буду вас ждать первого декабря.'
+            text = 'До нового года ещё далеко, я буду Вас ждать 1 декабря.'
+            tts = 'До нового года ещё далеко, я буду Вас ждать первого декабря.'
 
         self.state.end_session = True
         start_text = 'Здравствуйте! {} Адвент календарь - это список ежедневных заданий в ожидании Нового года. ' \
@@ -170,11 +170,11 @@ class AdventCalendarMRCHandler(MRCHandler):
 
         if welcome:
             if self.message.session.user:
-                tts += '{}{}! Я запомнила ваш возраст {}. ' \
+                tts += '{}{}! Я запомнила Ваш возраст {}. ' \
                       'Чтобы получать задания для другого возраста - всегда можете сказать мне: «Изменить возраст».\n' \
                       'Желаю Вам приятного ожидания Нового года!\n\n'.format(audio, self.age, EMOJI.smile)
             else:
-                tts += '{}{}! Я поняла ваш возраст, но чтобы я запомнила его - Вам нужно авторизоваться {}.\n\n'\
+                tts += '{}{}! Я поняла Ваш возраст, но чтобы я запомнила его - Вам нужно авторизоваться {}.\n\n'\
                     .format(audio, self.age, EMOJI.smile)
 
         if self.is_active:
@@ -185,7 +185,7 @@ class AdventCalendarMRCHandler(MRCHandler):
             if task:
                 buttons = []
                 self.state.action = 'today'
-                tts += '{}Вот ваше задание на сегодня.\n{}'.format(audio if not welcome else '', task.text)
+                tts += '{}Вот Ваше задание на сегодня.\n{}'.format(audio if not welcome else '', task.text)
                 if tts[-1] != '.':
                     tts += '. '
                 else:
@@ -206,7 +206,7 @@ class AdventCalendarMRCHandler(MRCHandler):
                 # Если запрос колонки - то отпарвляем пуш с дневным заданием
                 push = None
                 if self.message.session.application.is_speaker:
-                    push = Push('Посмотрите ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
+                    push = Push('Посмотрите Ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
                 # return ActionResponse(tts=tts, card=task.card, buttons=buttons, push=push)
                 return ActionResponse(tts=tts, card=self.get_today_card(), buttons=buttons, push=push)
             else:
@@ -247,7 +247,7 @@ class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
     def action(self, **kwargs):
 
         if self.is_have_push:  # задание на телефон
-            push = Push('Посмотрите ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
+            push = Push('Посмотрите Ваше задание на сегодня', payload=dict(action='open_push', age=self.age))
             return ActionResponse('Выслала задание на телефон', push=push)
 
         if self.is_change_age_request:
@@ -258,13 +258,13 @@ class AdventCalendarStartMRCHandler(AdventCalendarMRCHandler):
             if self.age:
                 return self.today_response()
             else:
-                age_question = 'Чтобы я подобрала для вас по настоящему интересные задания, скажите сколько вам лет?'
+                age_question = 'Чтобы я подобрала для Вас по-настоящему интересные задания, скажите сколько Вам лет?'
                 self.state.action = 'age'
                 return ActionResponse(tts='Здравствуйте! {} До Нового года осталось совсем немного, '
-                                          'я хочу украсить ваше ожидание ^этого^ чудесного праздника! '
-                                          'Адвент календарь - это список ежедневных заданий в ожидании Нового года. '
-                                          'Я помогу вам готовиться к праздникам, давая приятное и интересное задание! '
-                                          'Каждый день — ^новое^!\n'.format(EMOJI.elka) + age_question)
+                                          'я хочу скрасить Ваше ожидание чуда! '
+                                          'Адвент календарь - это список предновогодних заданий. '
+                                          'Я помогу Вам подготовиться к праздникам, давая каждый день новое задание! '
+                                          '\n'.format(EMOJI.elka) + age_question)
         else:
             return self.not_active_response()
 
@@ -285,7 +285,7 @@ class AdventCalendarAgeMRCHandler(AdventCalendarMRCHandler):
         if age:
             return self.today_response(welcome=True)
         else:
-            return ActionResponse('Я не расслышала. Повторите ещё раз. Сколько вам лет?')
+            return ActionResponse('Я не расслышала. Повторите ещё раз. Сколько Вам лет?')
 
 
 class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
@@ -305,7 +305,11 @@ class AdventCalendarTomorrowMRCHandler(AdventCalendarMRCHandler):
             task_tomorrow = calendar.get(self.tomorrow)
             audio = AdventCalendarAudio.get_random()
             if task_tomorrow and task_tomorrow.text_yesterday:
-                return ActionResponse(tts=audio + task_tomorrow.text_yesterday)
+                text_yesterday = task_tomorrow.text_yesterday
+                if text_yesterday[-1] not in ('.', '?'):
+                    text_yesterday += '.'
+                text_yesterday += '\nЭто всего лишь намёк. А подробнее я расскажу Вам завтра. '
+                return ActionResponse(tts=audio + text_yesterday)
             return ActionResponse(tts=audio + 'Завтра ждёт очередное интересное задание.')
         else:
             not_tomorrow_phrase = random.choice(NOT_TOMORROW_PHRASES)  # До завтра
