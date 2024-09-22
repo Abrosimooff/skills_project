@@ -1,6 +1,5 @@
 from __future__ import unicode_literals, absolute_import, division, print_function
 
-import json
 import pickle
 import re
 from typing import AnyStr, Dict, NoReturn, Optional, List
@@ -8,138 +7,7 @@ from typing import AnyStr, Dict, NoReturn, Optional, List
 import requests
 
 from core.utils.misc import SafeContext
-
-
-
-
-# 1. SEND CODE TO PHONE
-"""
-Request URL: https://api-video.goodline.info/ords/mobile/vc2/auth/phone
-Request Method: POST
-Status Code: 200 
-Remote Address: 212.75.210.181:443
-Referrer Policy: strict-origin-when-cross-origin
-access-control-allow-credentials: true
-access-control-allow-origin: https://video.online-dozor.ru
-access-control-expose-headers: Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, Vary
-content-length: 20
-content-type: application/json;charset=UTF8
-date: Tue, 14 Sep 2021 14:22:41 GMT
-vary: Origin
-:authority: api-video.goodline.info
-:method: POST
-:path: /ords/mobile/vc2/auth/phone
-:scheme: https
-accept: application/json, text/plain, */*, application/json
-accept-encoding: gzip, deflate, br
-accept-language: ru-RU,ru;q=0.9
-api_key: 86e3ff40ec2c52a8504c8669710b4394
-content-length: 67
-content-type: application/json;charset=UTF-8
-origin: https://video.online-dozor.ru
-referer: https://video.online-dozor.ru/
-sec-ch-ua: "Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"
-sec-ch-ua-mobile: ?0
-sec-fetch-dest: empty
-sec-fetch-mode: cors
-sec-fetch-site: cross-site
-user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36
-{phone: "79511883897", id_device: "51eba6dcec0a4", id_platform: 3}
-id_device: "51eba6dcec0a4"
-id_platform: 3
-phone: "79511883897"
-"""
-
-
-# 2. SEND CODE FROM SMS
-"""
-Request URL: https://api-video.goodline.info/ords/mobile/vc2/auth/token/sms
-Request Method: POST
-Status Code: 200 
-Remote Address: 212.75.210.181:443
-Referrer Policy: strict-origin-when-cross-origin
-access-control-allow-credentials: true
-access-control-allow-origin: https://video.online-dozor.ru
-access-control-expose-headers: Content-Type, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, Vary
-content-length: 758
-content-type: application/json;charset=UTF8
-date: Tue, 14 Sep 2021 14:23:57 GMT
-vary: Origin
-:authority: api-video.goodline.info
-:method: POST
-:path: /ords/mobile/vc2/auth/token/sms
-:scheme: https
-accept: application/json, text/plain, */*, application/json
-accept-encoding: gzip, deflate, br
-accept-language: ru-RU,ru;q=0.9
-api_key: 86e3ff40ec2c52a8504c8669710b4394
-content-length: 37
-content-type: application/json;charset=UTF-8
-origin: https://video.online-dozor.ru
-referer: https://video.online-dozor.ru/
-sec-ch-ua: "Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"
-sec-ch-ua-mobile: ?0
-sec-fetch-dest: empty
-sec-fetch-mode: cors
-sec-fetch-site: cross-site
-user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36
-{phone: "79511883897", code: "1631"}
-code: "1631"
-phone: "79511883897"
-"""
-
-# SMS RESPONSE
-
-"""
-{
-"LOGIN":"89511883897"
-,"CLIENT_NAME":"89511883897"
-,"IS_ADMIN":0
-,"REGISTER_DT":"12.09.2018 17:38:18"
-,"TOKEN":"CBF6512B-3FE7-7FD4-E053-2965660A6B50"
-,"IS_BUGSHAKER_ENABLED":1
-,"IS_WIDGET_ENABLED":0
-,"IS_PAYED":1
-,"ADDRESS":[
-{
-"ID_ADDRESS":18482
-,"CITY":"\u0433. \u041A\u0435\u043C\u0435\u0440\u043E\u0432\u043E"
-,"STREET":"\u0443\u043B. \u0414\u0440\u0443\u0436\u0431\u044B"
-,"HOUSE":"\u0434. 30\/8"
-,"ENTRANCE":"1"
-,"FLAT":"\u043A\u0432. 45"
-,"CITY_FIAS_GUID":"94bb19a3-c1fa-410b-8651-ac1bf7c050cd"
-,"STREET_FIAS_GUID":"135b6a8c-542f-4361-84f2-0fe10a1fc03c"
-,"HOUSE_FIAS_GUID":"a82ae846-4f60-4501-92a2-76dc50b2ae31"
-,"ENTRANCE_FIAS_GUID":"6E20973F-A4D4-3C22-E053-0100007FEAA2"
-,"FLAT_FIAS_GUID":"67355888-2c05-46cf-9d30-92164013cebb"
-,"GESTURE":0
-}
-]
-}
-"""
-
-PHONE_HEADERS = {
-    ':authority': 'api-video.goodline.info',
-    ':method': 'POST',
-    ':path': '/ords/mobile/vc2/auth/phone',
-    ':scheme': 'https',
-    'accept': 'application/json, text/plain, */*, application/json',
-    'accept-encoding': 'gzip, deflate, br',
-    'accept-language': 'ru-RU,ru;q=0.9',
-    'api_key': '86e3ff40ec2c52a8504c8669710b4394',
-    'content-length': '67',
-    'content-type': 'application/json;charset=UTF-8',
-    'origin': 'https://video.online-dozor.ru',
-    'referer': 'https://video.online-dozor.ru/',
-    'sec-ch-ua': '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'cross-site',
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36',
-}
-
+from skills.settings import PHONE_NUMBER
 
 
 class DigitDetector:
@@ -229,6 +97,7 @@ class DoorInfo:
         # print('content', response.content)
         return response.status_code == 200
 
+
 class OnlineDozor:
     """ Класс для работы с сайтом онлайн-дозор """
     phone_url = 'https://api-video.goodline.info/ords/mobile/vc2/auth/phone'
@@ -297,7 +166,7 @@ class OnlineDozor:
         # 1. Отправка смс с кодом на телефон
 
         phone_data = dict(
-            phone="79511883897",
+            phone=PHONE_NUMBER,
             id_device="51eba6dcec0a4",
             id_platform=3
         )
@@ -309,7 +178,7 @@ class OnlineDozor:
     def send_code_to_site_for_auth(self, code_string):
         # 2. Отправка кода из смс на сайт для подтверждения авторизации
         sms_data = dict(
-            phone="79511883897",
+            phone=PHONE_NUMBER,
             code=code_string,
         )
         response = self.session.post(self.sms_url, data=sms_data)
